@@ -1,10 +1,13 @@
 """What a change in a material's delivery date does to the schedule."""
 
+from collections.abc import Callable
 from datetime import date
 
 from pydantic import BaseModel
 
 from delay_ai.cpm import Schedule, compute_schedule, working_days_between
+from delay_ai.events import DELAY_ASSESSED, DELIVERY_DATE_CHANGED, Emit, Event, EventStore
+from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Material
 
 
@@ -74,3 +77,54 @@ def assess_delivery_change(
         new_finish=after.finish_date,
         delayed_activities=[a.id for a in activities if slip(a.id) > 0],
     )
+
+
+def assess_unassessed_changes(
+    po_number: str, events: list[Event], activities: list[Activity], start_date: date
+) -> list[Emit]:
+    """Assess every delivery change for this PO that has not been assessed yet.
+
+    Runs when a change arrives and again when the material gets linked, so a
+    change that arrived before the link is picked up then.
+    """
+    links = {m.po_number: m.activity_id for m in build_materials(events)}
+    if links.get(po_number) is None:
+        return []  # wait until a planner links it
+    assessed = {e.payload["change_event"] for e in events if e.type == DELAY_ASSESSED}
+    emits = []
+    for change in events:
+        if (
+            change.type != DELIVERY_DATE_CHANGED
+            or change.payload["po_number"] != po_number
+            or change.id in assessed
+        ):
+            continue
+        # Delivery dates as they were just before this change, with today's links.
+        before = [
+            m.model_copy(update={"activity_id": links.get(m.po_number)})
+            for m in build_materials([e for e in events if e.id < change.id])
+        ]
+        impact = assess_delivery_change(
+            activities,
+            before,
+            start_date,
+            po_number,
+            date.fromisoformat(change.payload["new_delivery"]),
+        )
+        emits.append(
+            Emit(DELAY_ASSESSED, {"change_event": change.id, **impact.model_dump(mode="json")})
+        )
+    return emits
+
+
+def make_impact_handler(
+    store: EventStore, activities: list[Activity], start_date: date
+) -> Callable[[Event], list[Emit]]:
+    """Handles both DeliveryDateChanged and MaterialLinked."""
+
+    def handle(event: Event) -> list[Emit]:
+        return assess_unassessed_changes(
+            event.payload["po_number"], store.all(), activities, start_date
+        )
+
+    return handle

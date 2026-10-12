@@ -8,8 +8,17 @@ from dotenv import load_dotenv
 
 from delay_ai.cpm import compute_schedule
 from delay_ai.email_source import FolderEmailSource
-from delay_ai.events import EMAIL_RECEIVED, MATERIAL_ORDERED, NEEDS_REVIEW, EventStore
+from delay_ai.events import (
+    DELAY_ASSESSED,
+    DELIVERY_DATE_CHANGED,
+    EMAIL_RECEIVED,
+    MATERIAL_LINKED,
+    MATERIAL_ORDERED,
+    NEEDS_REVIEW,
+    EventStore,
+)
 from delay_ai.extraction import extract_with_llm
+from delay_ai.impact import make_impact_handler
 from delay_ai.ingestion import make_email_handler
 from delay_ai.linking import make_link_handler, planner_link, suggest_with_llm
 from delay_ai.loaders import load_project, load_schedule
@@ -17,17 +26,27 @@ from delay_ai.materials import build_materials, pending_link_suggestions
 from delay_ai.orchestrator import Orchestrator, ingest_emails
 
 
-def ingest(store: EventStore, data: Path, emails: Path) -> None:
+def handlers(store: EventStore, data: Path) -> dict:
     activities = load_schedule(data / "schedule.csv")
-    schedule = compute_schedule(activities, load_project(data / "project.json").start_date)
-    handlers = {
+    start_date = load_project(data / "project.json").start_date
+    schedule = compute_schedule(activities, start_date)
+    impact = make_impact_handler(store, activities, start_date)
+    return {
         EMAIL_RECEIVED: make_email_handler(store, extract_with_llm),
         MATERIAL_ORDERED: make_link_handler(activities, schedule, suggest_with_llm),
+        DELIVERY_DATE_CHANGED: impact,
+        MATERIAL_LINKED: impact,
     }
+
+
+def ingest(store: EventStore, data: Path, emails: Path) -> None:
     print(f"{ingest_emails(FolderEmailSource(emails), store)} new emails")
     print(f"{store.retry_failed()} failed events retried")
-    Orchestrator(store, handlers).run()
+    Orchestrator(store, handlers(store, data)).run()
+    report(store)
 
+
+def report(store: EventStore) -> None:
     events = store.all()
     print("\nMaterials:")
     for m in build_materials(events):
@@ -39,6 +58,17 @@ def ingest(store: EventStore, data: Path, emails: Path) -> None:
     for e in pending_link_suggestions(events):
         p = e.payload
         print(f"  {p['po_number']}: rules {p['by_rules']}, LLM {p['by_llm']} - {p['rationale']}")
+    print("\nDelays:")
+    for e in events:
+        if e.type == DELAY_ASSESSED:
+            p = e.payload
+            effect = (
+                f"project +{p['project_slip_days']} days, finish {p['new_finish']}"
+                if p["project_slip_days"] > 0
+                else "absorbed by float"
+            )
+            moved = f"{p['old_delivery']} -> {p['new_delivery']}"
+            print(f"  {p['po_number']} ({p['activity_id']}): {moved}, {effect}")
     print("\nNeeds review:")
     for e in events:
         if e.type == NEEDS_REVIEW:
@@ -57,6 +87,8 @@ def link(store: EventStore, data: Path, po_number: str, activity_id: str) -> Non
     emit = planner_link(po_number, activity_id)
     store.append(emit.type, emit.payload)
     print(f"Linked {po_number} to {activity_id}")
+    Orchestrator(store, handlers(store, data)).run()
+    report(store)
 
 
 def main() -> None:
