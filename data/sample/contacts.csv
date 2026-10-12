@@ -1,0 +1,9 @@
+name,role,company,email,activity_ids
+Sarah Okafor,Project Manager,Contractor,s.okafor@contractor.example,
+Tom Fletcher,Planner,Contractor,t.fletcher@contractor.example,
+Priya Shah,Site Manager,Contractor,p.shah@contractor.example,
+Dave Mitchell,Steel Erection Foreman,Pennine Steel Fabrications Ltd,d.mitchell@pennine-steel.example,A05;A06;A07
+Gareth Lloyd,Envelope Package Manager,Clearview Glazing Systems,g.lloyd@clearview-glazing.example,A09;A10
+Emma Clarke,MEP Supervisor,Aire Valley M&E Ltd,e.clarke@airevalley-me.example,A12;A15;A19
+Liam Walsh,Interiors Foreman,Kirkstall Interiors Ltd,l.walsh@kirkstall-interiors.example,A13;A16;A17
+Nadia Hussain,Lift Installation Lead,Apex Lifts UK Ltd,n.hussain@apex-lifts.example,A14;A19

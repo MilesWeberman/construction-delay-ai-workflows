@@ -7,7 +7,9 @@ authors = [
     { name = "MilesWeberman", email = "webermanmiles@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.1",
+]
 
 [project.scripts]
 delay-ai = "delay_ai:main"
