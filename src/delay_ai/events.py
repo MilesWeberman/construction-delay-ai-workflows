@@ -18,6 +18,8 @@ LINK_SUGGESTED = "LinkSuggested"
 MATERIAL_LINKED = "MaterialLinked"
 DELAY_ASSESSED = "DelayAssessed"
 RECOVERY_OPTIONS_PROPOSED = "RecoveryOptionsProposed"
+OPTION_CHOSEN = "OptionChosen"
+ACTION_PLAN_DRAFTED = "ActionPlanDrafted"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (

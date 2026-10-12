@@ -16,7 +16,8 @@ from delay_ai.impact import make_impact_handler
 from delay_ai.loaders import load_schedule
 from delay_ai.models import Material
 from delay_ai.orchestrator import Orchestrator, ingest_emails
-from delay_ai.planner import Edit, RecoveryOption, RecoveryPlan, apply_edits, make_planner_handler
+from delay_ai.plan import Edit, apply_edits
+from delay_ai.planner import RecoveryOption, RecoveryPlan, make_planner_handler
 
 START = date(2026, 11, 2)
 TODAY = date(2026, 10, 12)

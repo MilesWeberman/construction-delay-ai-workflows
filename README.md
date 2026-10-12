@@ -96,6 +96,14 @@ automatically when the rules and the LLM agree; otherwise a planner confirms it:
 uv run delay-ai link PO-24150 A13
 ```
 
+When a delay pushes out the finish, the planner proposes recovery options. Pick
+one, then read the drafted messages:
+
+```bash
+uv run delay-ai choose <event> <number>   # ids are printed by ingest
+uv run delay-ai outbox
+```
+
 ## Develop
 
 ```bash
@@ -148,3 +156,9 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 
 **Actions**
 - Emails and notifications are drafted to an outbox and never sent.
+- Choosing an option updates the plan for dropped links and shortened
+  activities. An earlier delivery only counts once the supplier confirms it by
+  email.
+- People are notified based on the activities in `contacts.csv`, and the
+  project team (contacts with no activities) hears about every change.
+- There's no undo for a chosen option yet.
