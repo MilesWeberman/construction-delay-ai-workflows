@@ -132,12 +132,13 @@ def run_queued() -> None:
         label = "Thinking"
     else:
         if kind == "link":
-            emit = planner_link(*args)
+            emits = [planner_link(po, activity) for po, activity in args[0]]
             label = "Updating the schedule"
         else:
-            emit = choose_option(s.get(args[0]), args[1])
+            emits = [choose_option(s.get(args[0]), args[1])]
             label = "Updating the schedule and drafting messages (about a minute)"
-        s.append(emit.type, emit.payload)
+        for emit in emits:
+            s.append(emit.type, emit.payload)
     with st.status(label) as status:
         Orchestrator(s, handlers(s, DATA), on_step=status.write).run()
         status.update(label="Done", state="complete")
@@ -176,7 +177,12 @@ chosen = {e.payload["options_event"]: e for e in of_type(events, OPTION_CHOSEN)}
 
 with st.sidebar:
     st.subheader("✨ AI assistant")
-    st.caption("Tell it about a delivery, try a change, or ask a question.")
+    st.markdown(
+        "You can:  \n"
+        "- **Report a delivery change**, e.g. *Pennine rang, steel now arrives 19 Jan*\n"
+        "- **Try a schedule change**, e.g. *Can glazing start floor by floor during decking?*\n"
+        "- **Ask about the schedule**, e.g. *Why don't the late kitchens move completion?*"
+    )
     replies = {e.payload["chat_event"]: e for e in of_type(events, CHAT_REPLIED)}
     with st.container(height=480, border=False):
         for e in of_type(events, CHAT_MESSAGE_RECEIVED):
@@ -192,8 +198,8 @@ with st.sidebar:
 
 slip = schedule.duration_days - original.duration_days
 st.title(f"{project.name} schedule")
-status = f":red[{slip:+d} working days late]" if slip > 0 else ":green[on plan]"
-st.markdown(f"{project.location} · Completion **{schedule.finish_date:%d %b %Y}** · {status}")
+lateness = f":red[{slip:+d} working days late]" if slip > 0 else ":green[on plan]"
+st.markdown(f"{project.location} · Completion **{schedule.finish_date:%d %b %Y}** · {lateness}")
 
 # ---------- AI alerts ----------
 
@@ -245,22 +251,27 @@ links = pending_link_suggestions(events)
 if links:
     ids = [a.id for a in activities]
     with st.container(border=True):
-        with st.expander(f"🔗 {len(links)} new materials to place on the schedule"):
-            for suggestion in links:
-                p = suggestion.payload
-                pick = p["by_llm"] or p["by_rules"] or ids[0]
-                left, middle, right = st.columns([2, 2, 1], vertical_alignment="center")
-                left.markdown(f"**{by_po[p['po_number']].description}** is needed for")
-                activity = middle.selectbox(
-                    "Activity",
-                    ids,
-                    index=ids.index(pick),
-                    format_func=lambda i: names[i],
-                    key=f"link-{p['po_number']}",
-                    label_visibility="collapsed",
-                )
-                right.button("Confirm", key=f"confirm-{p['po_number']}", on_click=queue,
-                             args=("link", p["po_number"], activity))  # fmt: skip
+        st.markdown(f"✨ **The AI matched {len(links)} deliveries to the tasks that need them.**")
+        st.caption("Check each match. Once confirmed, a late delivery is checked against its task.")
+        picks = []
+        for suggestion in links:
+            p = suggestion.payload
+            m = by_po[p["po_number"]]
+            left, middle, right = st.columns([3, 3, 1], vertical_alignment="center")
+            left.markdown(f"🚚 **{m.description}**  \n{m.supplier} · {m.planned_delivery:%d %b %Y}")
+            activity = middle.selectbox(
+                "Needed for",
+                ids,
+                index=ids.index(p["by_llm"] or p["by_rules"] or ids[0]),
+                format_func=lambda i: f"Needed for: {names[i]}",
+                key=f"link-{p['po_number']}",
+                label_visibility="collapsed",
+            )
+            right.button("Confirm", key=f"confirm-{p['po_number']}", on_click=queue,
+                         args=("link", [(p["po_number"], activity)]))  # fmt: skip
+            picks.append((p["po_number"], activity))
+        if len(picks) > 1:
+            st.button("Confirm all", key="confirm-all", on_click=queue, args=("link", picks))
 
 if absorbed:
     st.caption(f"Also delayed, with no effect on completion: {', '.join(absorbed)}.")
@@ -292,7 +303,7 @@ opens_on = (
     if first_problem
     else project.start_date
 )
-calendar(
+clicked = calendar(
     events=calendar_events,
     options={
         "initialView": "dayGridMonth",
@@ -305,9 +316,23 @@ calendar(
         "firstDay": 1,
         "height": 640,
     },
+    # Hovering an event shows its full name; FullCalendar cuts long names off.
+    custom_css="""
+        .fc-daygrid-event:hover { z-index: 10 !important; }
+        .fc-daygrid-event:hover .fc-event-title,
+        .fc-daygrid-event:hover .fc-event-title-container,
+        .fc-daygrid-event:hover .fc-event-main {
+            white-space: normal !important; overflow: visible !important;
+        }
+    """,
+    callbacks=["eventClick"],
     key=f"calendar-{len(events)}",
 )
-st.caption("🚚 delivery · ⚠️ delivery moved")
+if clicked and clicked.get("callback") == "eventClick":
+    event = clicked["eventClick"]["event"]
+    st.markdown(f"**{event['title']}** · {event['start'][:10]}")
+else:
+    st.caption("🚚 delivery · ⚠️ delivery moved · hover or click an item to see it in full")
 
 # ---------- inbox ----------
 
@@ -364,6 +389,10 @@ else:
 # ---------- materials ----------
 
 st.subheader("Materials")
+supplier_says = {}
+for e in of_type(events, DELIVERY_CONFIRMED, DELIVERY_DATE_CHANGED):
+    confirmed = e.type == DELIVERY_CONFIRMED
+    supplier_says[e.payload["po_number"]] = "✅ Confirmed by supplier" if confirmed else "⚠️ Moved"
 st.dataframe(
     pd.DataFrame(
         [
@@ -371,7 +400,8 @@ st.dataframe(
                 "Material": m.description,
                 "Supplier": m.supplier,
                 "Delivery": f"{m.planned_delivery:%d %b %Y}",
-                "Needed for": names[m.activity_id] if m.activity_id else "To place",
+                "Status": supplier_says.get(m.po_number, "Ordered"),
+                "Needed for": names[m.activity_id] if m.activity_id else "Not matched yet",
                 "PO": m.po_number,
             }
             for m in materials

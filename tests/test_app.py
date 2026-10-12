@@ -28,3 +28,15 @@ def test_confirming_a_link_removes_it_from_decisions(app):
     app = next(b for b in app.button if b.key == "confirm-PO-24170").click().run()
     assert not app.exception
     assert not any(b.key == "confirm-PO-24170" for b in app.button)
+
+
+def test_confirm_all_links(app):
+    app = next(b for b in app.button if b.key == "confirm-all").click().run()
+    assert not app.exception
+    assert not any(b.key and b.key.startswith("confirm-") for b in app.button)
+
+
+def test_materials_show_supplier_confirmation(app):
+    materials = app.dataframe[1].value
+    row = materials[materials["PO"] == "PO-24150"].iloc[0]
+    assert row["Status"] == "✅ Confirmed by supplier"
