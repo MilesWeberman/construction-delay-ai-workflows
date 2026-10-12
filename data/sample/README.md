@@ -31,8 +31,10 @@ for what rules can't get, then validation and human review of low-confidence row
 
 | Email | Material | Expected outcome |
 |---|---|---|
-| `2026-10-12_steel_delay` | Steel (A05, critical) | +10 working days, so the end date slips |
-| `2026-10-12_lift_delay` | Lifts (A14, 85 days float) | +15 working days, absorbed by float |
-| `2026-10-12_kitchen_delay` | Kitchens (A16, critical) | +5 working days. No PO number, so match on supplier |
+| `2026-10-12_steel_delay` | Steel (A05, critical) | Delivery +10 working days, end date +7 (lead time absorbs 3) |
+| `2026-10-12_lift_delay` | Lifts (A14, 85 days float) | Delivery +15 working days, absorbed by float. End date unchanged |
+| `2026-10-12_kitchen_delay` | Kitchens (A16, critical) | Delivery +5 working days, end date +3. No PO number, so match on supplier |
 | `2026-10-13_windows_maybe` | Windows (A10, 15 days float) | No date given, so it goes to a person for review |
 | `2026-10-13_plasterboard_confirmed` | Plasterboard | Confirmed on time, so no change |
+
+An activity can start the working day after its material arrives.
