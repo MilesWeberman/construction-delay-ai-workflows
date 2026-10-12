@@ -69,9 +69,11 @@ connectors.
 uv run streamlit run src/delay_ai/app.py   # http://localhost:8501
 ```
 
-Tabs: **Inbox** (the sample emails and what happened to each), **Materials**
-(confirm links), **Schedule** (Gantt or calendar), **Delays & options** (choose
-a recovery option), **Outbox** (drafted messages) and **Chat**.
+A scheduling app with AI built in, on one page: the project's completion date,
+AI alerts (a late delivery, with recovery options to choose; new materials to
+place on the schedule), the schedule as a calendar, the inbox and materials as
+tables (click an email to read it), and the outbox once an option is chosen.
+The AI assistant is in the sidebar.
 
 The app opens instantly from the cached first run (see below). Whatever a
 visitor does is saved in their own browser's localStorage, so each device keeps
@@ -203,6 +205,7 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Visitors' chat and option choices call the LLM on the app's API key.
 - The inbox is the hardcoded sample folder; emails in review can't be resolved
   in the app yet.
+- The schedule is shown as a calendar only; there's no Gantt or critical-path view.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the
