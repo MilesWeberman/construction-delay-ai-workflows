@@ -1,4 +1,8 @@
-"""EmailReceived handler: extract, validate, then emit facts or ask a person to review."""
+"""Handler for emails and chat messages: extract, validate, then emit facts or ask for review.
+
+Chat messages come from the contractor's own team, so they can be about any
+supplier's order, but new orders must still arrive by the supplier's email.
+"""
 
 from collections.abc import Callable
 
@@ -30,7 +34,9 @@ def make_email_handler(store: EventStore, extract: Extractor) -> Callable[[Event
         email = Email.model_validate(event.payload)
         materials = {m.po_number: m for m in build_materials(store.all())}
         from_sender = [
-            m for m in materials.values() if domain(m.supplier_email) == domain(email.sender)
+            m
+            for m in materials.values()
+            if email.channel == "chat" or domain(m.supplier_email) == domain(email.sender)
         ]
         facts = apply_rules(email)
         extraction = extract(email, facts, from_sender)
@@ -59,6 +65,8 @@ def decide(
         problems.append("No orders or deliveries found")
 
     is_order = extraction.kind == "order_confirmation"
+    if is_order and email.channel == "chat":
+        problems.append("New orders must come from the supplier's email, not chat")
     emits = []
     for item in extraction.items:
         po_number, matched_by = match_po(item, facts, from_sender)
@@ -127,7 +135,11 @@ def check_item(
         problems.append(f"{po_number} is already recorded")
     if not is_order and po_number not in materials:
         problems.append(f"{po_number} is not a known order")
-    elif not is_order and domain(materials[po_number].supplier_email) != domain(email.sender):
+    elif (
+        not is_order
+        and email.channel == "email"
+        and domain(materials[po_number].supplier_email) != domain(email.sender)
+    ):
         problems.append(f"{po_number} belongs to a different supplier")
     if item.delivery_date is None:
         problems.append(f"No delivery date for {po_number}")

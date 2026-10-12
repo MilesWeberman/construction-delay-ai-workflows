@@ -1,4 +1,4 @@
-"""Command line entry point: `uv run delay-ai <ingest|link|choose|outbox>`."""
+"""Command line entry point: `uv run delay-ai <ingest|chat|link|choose|outbox>`."""
 
 import argparse
 import sys
@@ -11,6 +11,7 @@ from delay_ai.cpm import compute_schedule
 from delay_ai.email_source import FolderEmailSource
 from delay_ai.events import (
     ACTION_PLAN_DRAFTED,
+    CHAT_MESSAGE_RECEIVED,
     DELAY_ASSESSED,
     DELIVERY_DATE_CHANGED,
     EMAIL_RECEIVED,
@@ -27,7 +28,7 @@ from delay_ai.ingestion import make_email_handler
 from delay_ai.linking import make_link_handler, planner_link, suggest_with_llm
 from delay_ai.loaders import load_contacts, load_project, load_schedule
 from delay_ai.materials import build_materials, pending_link_suggestions
-from delay_ai.orchestrator import Orchestrator, ingest_emails
+from delay_ai.orchestrator import Orchestrator, ingest_chat, ingest_emails
 from delay_ai.planner import make_planner_handler, propose_with_llm
 
 
@@ -38,8 +39,10 @@ def handlers(store: EventStore, data: Path) -> dict:
     contacts = load_contacts(data / "contacts.csv")
     schedule = compute_schedule(activities, start_date)
     impact = make_impact_handler(store, activities, start_date)
+    messages = make_email_handler(store, extract_with_llm)
     return {
-        EMAIL_RECEIVED: make_email_handler(store, extract_with_llm),
+        EMAIL_RECEIVED: messages,
+        CHAT_MESSAGE_RECEIVED: messages,
         MATERIAL_ORDERED: make_link_handler(activities, schedule, suggest_with_llm),
         DELIVERY_DATE_CHANGED: impact,
         MATERIAL_LINKED: impact,
@@ -108,6 +111,12 @@ def report(store: EventStore) -> None:
             print(f"  event {e.id} ({e.type}): {e.error}")
 
 
+def chat(store: EventStore, data: Path, text: str, author: str) -> None:
+    ingest_chat(text, author, store)
+    Orchestrator(store, handlers(store, data)).run()
+    report(store)
+
+
 def link(store: EventStore, data: Path, po_number: str, activity_id: str) -> None:
     if po_number not in {m.po_number for m in build_materials(store.all())}:
         sys.exit(f"Unknown PO: {po_number}")
@@ -152,6 +161,9 @@ def main() -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     ingest_cmd = commands.add_parser("ingest", help="Read emails and update the materials table")
     ingest_cmd.add_argument("--emails", type=Path, default=Path("data/sample/emails"))
+    chat_cmd = commands.add_parser("chat", help="Pass on delivery news, e.g. from a phone call")
+    chat_cmd.add_argument("text")
+    chat_cmd.add_argument("--author", default="Site team")
     link_cmd = commands.add_parser("link", help="Confirm which activity needs a material")
     link_cmd.add_argument("po_number")
     link_cmd.add_argument("activity_id")
@@ -165,6 +177,8 @@ def main() -> None:
     store = EventStore(args.db)
     if args.command == "ingest":
         ingest(store, args.data, args.emails)
+    elif args.command == "chat":
+        chat(store, args.data, args.text, args.author)
     elif args.command == "link":
         link(store, args.data, args.po_number, args.activity_id)
     elif args.command == "choose":

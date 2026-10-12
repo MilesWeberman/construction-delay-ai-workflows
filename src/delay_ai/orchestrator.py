@@ -1,9 +1,12 @@
 """Runs pending events through their handlers until nothing is left to do."""
 
 from collections.abc import Callable
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from delay_ai.email_source import EmailSource
-from delay_ai.events import EMAIL_RECEIVED, Emit, Event, EventStore
+from delay_ai.events import CHAT_MESSAGE_RECEIVED, EMAIL_RECEIVED, Emit, Event, EventStore
+from delay_ai.models import Email
 
 Handler = Callable[[Event], list[Emit]]
 
@@ -45,3 +48,16 @@ def ingest_emails(source: EmailSource, store: EventStore) -> int:
         if store.append(EMAIL_RECEIVED, payload, dedupe_key=f"email:{email.message_id}"):
             new += 1
     return new
+
+
+def ingest_chat(text: str, author: str, store: EventStore) -> Event:
+    """Add a ChatMessageReceived event for news typed in by the team."""
+    message = Email(
+        message_id=f"chat-{uuid4()}",
+        sender=author,
+        subject="Chat message",
+        sent_at=datetime.now(UTC),
+        body=text,
+        channel="chat",
+    )
+    return store.append(CHAT_MESSAGE_RECEIVED, message.model_dump(mode="json"))
