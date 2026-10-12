@@ -1,4 +1,4 @@
-"""Command line entry point: `uv run delay-ai ingest` and `uv run delay-ai link`."""
+"""Command line entry point: `uv run delay-ai <ingest|link|choose|outbox>`."""
 
 import argparse
 import sys
@@ -6,15 +6,18 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from delay_ai.actions import choose_option, draft_with_llm, make_action_handler
 from delay_ai.cpm import compute_schedule
 from delay_ai.email_source import FolderEmailSource
 from delay_ai.events import (
+    ACTION_PLAN_DRAFTED,
     DELAY_ASSESSED,
     DELIVERY_DATE_CHANGED,
     EMAIL_RECEIVED,
     MATERIAL_LINKED,
     MATERIAL_ORDERED,
     NEEDS_REVIEW,
+    OPTION_CHOSEN,
     RECOVERY_OPTIONS_PROPOSED,
     EventStore,
 )
@@ -22,7 +25,7 @@ from delay_ai.extraction import extract_with_llm
 from delay_ai.impact import make_impact_handler
 from delay_ai.ingestion import make_email_handler
 from delay_ai.linking import make_link_handler, planner_link, suggest_with_llm
-from delay_ai.loaders import load_project, load_schedule
+from delay_ai.loaders import load_contacts, load_project, load_schedule
 from delay_ai.materials import build_materials, pending_link_suggestions
 from delay_ai.orchestrator import Orchestrator, ingest_emails
 from delay_ai.planner import make_planner_handler, propose_with_llm
@@ -30,7 +33,9 @@ from delay_ai.planner import make_planner_handler, propose_with_llm
 
 def handlers(store: EventStore, data: Path) -> dict:
     activities = load_schedule(data / "schedule.csv")
-    start_date = load_project(data / "project.json").start_date
+    project = load_project(data / "project.json")
+    start_date = project.start_date
+    contacts = load_contacts(data / "contacts.csv")
     schedule = compute_schedule(activities, start_date)
     impact = make_impact_handler(store, activities, start_date)
     return {
@@ -39,6 +44,9 @@ def handlers(store: EventStore, data: Path) -> dict:
         DELIVERY_DATE_CHANGED: impact,
         MATERIAL_LINKED: impact,
         DELAY_ASSESSED: make_planner_handler(store, activities, start_date, propose_with_llm),
+        OPTION_CHOSEN: make_action_handler(
+            store, activities, start_date, contacts, project.name, draft_with_llm
+        ),
     }
 
 
@@ -68,7 +76,7 @@ def report(store: EventStore) -> None:
             effect = (
                 f"project +{p['project_slip_days']} days, finish {p['new_finish']}"
                 if p["project_slip_days"] > 0
-                else "absorbed by float"
+                else "finish unchanged"
             )
             moved = f"{p['old_delivery']} -> {p['new_delivery']}"
             print(f"  {p['po_number']} ({p['activity_id']}): {moved}, {effect}")
@@ -85,6 +93,11 @@ def report(store: EventStore) -> None:
                 print(f"       Risks: {o['risks']}")
             for r in e.payload["rejected"]:
                 print(f"    Rejected: {r['title']} ({'; '.join(r['problems'])})")
+    print("  Choose one with: delay-ai choose <event> <number>")
+    print("\nAction plans drafted (delay-ai outbox):")
+    for e in events:
+        if e.type == ACTION_PLAN_DRAFTED:
+            print(f"  {e.payload['title']}: {len(e.payload['messages'])} messages")
     print("\nNeeds review:")
     for e in events:
         if e.type == NEEDS_REVIEW:
@@ -107,6 +120,30 @@ def link(store: EventStore, data: Path, po_number: str, activity_id: str) -> Non
     report(store)
 
 
+def choose(store: EventStore, data: Path, options_event: int, number: int) -> None:
+    event = store.get(options_event)
+    if event.type != RECOVERY_OPTIONS_PROPOSED or not 1 <= number <= len(event.payload["options"]):
+        sys.exit(f"No option {number} in event {options_event}")
+    emit = choose_option(event, number)
+    store.append(emit.type, emit.payload)
+    print(f"Chose: {emit.payload['option']['title']}")
+    Orchestrator(store, handlers(store, data)).run()
+    outbox(store)
+
+
+def outbox(store: EventStore) -> None:
+    """Print every drafted message. Nothing is sent."""
+    for e in store.all():
+        if e.type != ACTION_PLAN_DRAFTED:
+            continue
+        print(f"=== Action plan: {e.payload['title']} ===")
+        for m in e.payload["messages"]:
+            print(f"\nTo: {m['name']} ({m['role']}) <{m['to']}>")
+            print(f"Subject: {m['subject']}\n")
+            print(m["body"])
+        print()
+
+
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="delay-ai")
@@ -118,6 +155,10 @@ def main() -> None:
     link_cmd = commands.add_parser("link", help="Confirm which activity needs a material")
     link_cmd.add_argument("po_number")
     link_cmd.add_argument("activity_id")
+    choose_cmd = commands.add_parser("choose", help="Pick a recovery option and draft actions")
+    choose_cmd.add_argument("options_event", type=int)
+    choose_cmd.add_argument("number", type=int)
+    commands.add_parser("outbox", help="Show drafted messages (nothing is sent)")
     args = parser.parse_args()
 
     args.db.parent.mkdir(parents=True, exist_ok=True)
@@ -126,3 +167,7 @@ def main() -> None:
         ingest(store, args.data, args.emails)
     elif args.command == "link":
         link(store, args.data, args.po_number, args.activity_id)
+    elif args.command == "choose":
+        choose(store, args.data, args.options_event, args.number)
+    elif args.command == "outbox":
+        outbox(store)

@@ -9,6 +9,7 @@ from delay_ai.cpm import Schedule, compute_schedule, working_days_between
 from delay_ai.events import DELAY_ASSESSED, DELIVERY_DATE_CHANGED, Emit, Event, EventStore
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Material
+from delay_ai.plan import current_activities
 
 
 class DeliveryImpact(BaseModel):
@@ -118,13 +119,13 @@ def assess_unassessed_changes(
 
 
 def make_impact_handler(
-    store: EventStore, activities: list[Activity], start_date: date
+    store: EventStore, base: list[Activity], start_date: date
 ) -> Callable[[Event], list[Emit]]:
     """Handles both DeliveryDateChanged and MaterialLinked."""
 
     def handle(event: Event) -> list[Emit]:
-        return assess_unassessed_changes(
-            event.payload["po_number"], store.all(), activities, start_date
-        )
+        events = store.all()
+        activities = current_activities(base, events)
+        return assess_unassessed_changes(event.payload["po_number"], events, activities, start_date)
 
     return handle
