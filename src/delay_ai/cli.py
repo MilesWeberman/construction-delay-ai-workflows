@@ -8,11 +8,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from delay_ai.actions import choose_option, draft_with_llm, make_action_handler
+from delay_ai.chat import make_chat_handler
 from delay_ai.cpm import compute_schedule
 from delay_ai.email_source import FolderEmailSource
 from delay_ai.events import (
     ACTION_PLAN_DRAFTED,
     CHAT_MESSAGE_RECEIVED,
+    CHAT_REPLIED,
     DELAY_ASSESSED,
     DELIVERY_DATE_CHANGED,
     EMAIL_RECEIVED,
@@ -44,7 +46,7 @@ def handlers(store: EventStore, data: Path) -> dict:
     messages = make_email_handler(store, extract_with_llm)
     return {
         EMAIL_RECEIVED: messages,
-        CHAT_MESSAGE_RECEIVED: messages,
+        CHAT_MESSAGE_RECEIVED: make_chat_handler(store, activities, start_date, messages),
         MATERIAL_ORDERED: make_link_handler(activities, schedule, suggest_with_llm),
         DELIVERY_DATE_CHANGED: impact,
         MATERIAL_LINKED: impact,
@@ -94,7 +96,8 @@ def report(store: EventStore) -> None:
     print("\nRecovery options:")
     for e in events:
         if e.type == RECOVERY_OPTIONS_PROPOSED:
-            print(f"  For {e.payload['po_number']} (event {e.id}):")
+            about = e.payload["po_number"] or "a change suggested in chat"
+            print(f"  For {about} (event {e.id}):")
             for n, o in enumerate(e.payload["options"], start=1):
                 print(
                     f"    {n}. {o['title']}: recovers {o['recovered_days']} days, "
@@ -120,9 +123,12 @@ def report(store: EventStore) -> None:
 
 
 def chat(store: EventStore, data: Path, text: str, author: str) -> None:
-    ingest_chat(text, author, store)
+    message = ingest_chat(text, author, store)
     run(store, data)
     report(store)
+    for e in store.all():
+        if e.type == CHAT_REPLIED and e.payload["chat_event"] == message.id:
+            print(f"\nAssistant: {e.payload['text']}")
 
 
 def link(store: EventStore, data: Path, po_number: str, activity_id: str) -> None:
@@ -173,7 +179,9 @@ def main() -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     ingest_cmd = commands.add_parser("ingest", help="Read emails and update the materials table")
     ingest_cmd.add_argument("--emails", type=Path, default=Path("data/sample/emails"))
-    chat_cmd = commands.add_parser("chat", help="Pass on delivery news, e.g. from a phone call")
+    chat_cmd = commands.add_parser(
+        "chat", help="Delivery news, a suggested schedule change, or a question"
+    )
     chat_cmd.add_argument("text")
     chat_cmd.add_argument("--author", default="Site team")
     link_cmd = commands.add_parser("link", help="Confirm which activity needs a material")
