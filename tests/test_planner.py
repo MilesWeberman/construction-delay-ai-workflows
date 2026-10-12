@@ -131,3 +131,11 @@ def test_no_options_when_delay_is_absorbed(activities):
     })  # fmt: skip
     assert handler(event) == []
     assert called == []
+
+
+def test_planner_prompt_includes_all_knowledge_files():
+    from delay_ai.planner import SYSTEM_PROMPT
+
+    assert "# Construction context (UK)" in SYSTEM_PROMPT
+    assert "# Scheduling context" in SYSTEM_PROMPT
+    assert "# Planning playbook" in SYSTEM_PROMPT

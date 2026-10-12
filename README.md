@@ -119,6 +119,15 @@ uv run ruff check .
 uv run ruff format .
 ```
 
+## Knowledge
+
+Expert context lives in Markdown files in `src/delay_ai/knowledge/`, and the
+planner (and chatbot) read them on every call:
+
+- `construction.md`: how UK buildings are built, terms, lead times, CDM 2015
+- `scheduling.md`: critical path, float, and how delays are recovered
+- `playbook.md`: the contractor's own rules; edit this with their planners
+
 ## Pilot simplifications
 
 Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
@@ -140,7 +149,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Linking rules only compare words in the material and activity names.
 
 **Email**
-- Read from a local `.eml` folder. Gmail and Outlook come later.
+- Read from a local `.eml` folder. There are no Gmail or Outlook connectors yet;
+  the demo shows the sample inbox, which is hardcoded.
 - Plain-text body only; attachments are ignored.
 - A supplier is recognised by the domain of the sender's email address.
 - PO numbers must look like `PO-<digits>`.
@@ -156,6 +166,11 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Event status (pending/done/failed) is updated in place, so the table isn't strictly append-only.
 - Failed events are retried only when the CLI runs again; there's no backoff.
 
+**Knowledge**
+- No RAG: every knowledge file goes into every prompt whole. Fine while the
+  files are small; retrieval is needed once there are many documents.
+- The knowledge is general UK practice, not yet the client's own standards.
+
 **Recovery options**
 - Three kinds of edit only: drop a dependency, shorten an activity (by up to
   30%), or ask for an earlier delivery.
@@ -165,7 +180,7 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
   (e.g. a material gets linked), the list keeps the old scores; the action
   plan recalculates the finish when an option is chosen.
 - One option can be chosen per delay.
-- The playbook (`src/delay_ai/playbook.md`) guides the LLM but isn't enforced
+- The knowledge files (`src/delay_ai/knowledge/`) guide the LLM but aren't enforced
   by the CPM. A planner still checks options, e.g. for safety-critical links.
 
 **Actions**

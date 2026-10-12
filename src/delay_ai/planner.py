@@ -2,10 +2,10 @@
 
 from collections.abc import Callable
 from datetime import date
-from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from delay_ai import knowledge
 from delay_ai.cpm import Schedule
 from delay_ai.events import RECOVERY_OPTIONS_PROPOSED, Emit, Event, EventStore
 from delay_ai.impact import DeliveryImpact, schedule_with_materials
@@ -13,8 +13,6 @@ from delay_ai.llm import complete_structured
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Material
 from delay_ai.plan import Edit, apply_edits, current_activities
-
-PLAYBOOK = (Path(__file__).parent / "playbook.md").read_text()
 
 
 class RecoveryOption(BaseModel):
@@ -63,9 +61,9 @@ Each option is a list of edits to the programme:
 
 The days recovered are calculated for you afterwards, so don't state them.
 Explain the rationale in planning terms, be honest about risks, and give a rough
-cost. Follow this playbook:
+cost. Use this context, and follow the playbook:
 
-{PLAYBOOK}"""
+{knowledge.load()}"""
 
 
 def propose_with_llm(
