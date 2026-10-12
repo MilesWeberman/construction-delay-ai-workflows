@@ -16,6 +16,7 @@ DELIVERY_CONFIRMED = "DeliveryConfirmed"
 NEEDS_REVIEW = "NeedsReview"
 LINK_SUGGESTED = "LinkSuggested"
 MATERIAL_LINKED = "MaterialLinked"
+DELAY_ASSESSED = "DelayAssessed"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (

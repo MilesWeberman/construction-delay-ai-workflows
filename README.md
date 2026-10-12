@@ -81,6 +81,9 @@ With the sample inbox you should see:
 - **Links to confirm:** materials where the rules and the LLM chose different
   activities, or the rules found none (e.g. plasterboard: the rules say A06,
   the LLM should say A13)
+- **Delays:** steel moves the finish +7 working days (to 2027-09-01); the lifts
+  and kitchen delays are absorbed (kitchens only because steel already pushed
+  fit-out back). Kitchens shows once its link is confirmed, if it needed confirming
 - **Needs review:** the Clearview windows email (possible delay, no firm date)
 - **Failed:** nothing
 
@@ -110,6 +113,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - No resource constraints (crews, cranes).
 - Dates are computed from the project start; there's no progress or status date.
 - An activity can start the working day after its material arrives.
+- Each delay is assessed against the plan at that moment. It isn't re-assessed
+  when later changes move the plan, or when a material is re-linked.
 
 **Materials**
 - One material per PO.
