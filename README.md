@@ -63,7 +63,21 @@ To use another provider, set its key and any
 Gmail and Outlook credentials are not needed yet; they come with the email
 connectors.
 
-## Run
+## Demo app
+
+```bash
+uv run streamlit run src/delay_ai/app.py   # http://localhost:8501
+```
+
+Tabs: **Inbox** (the sample emails and what happened to each), **Materials**
+(confirm links), **Schedule** (Gantt or calendar), **Delays & options** (choose
+a recovery option), **Outbox** (drafted messages) and **Chat**.
+
+The app opens instantly from the cached first run (see below). Whatever a
+visitor does is saved in their own browser's localStorage, so each device keeps
+its own demo; **Reset demo** in the sidebar starts again from the cached run.
+
+## Run (CLI)
 
 ```bash
 rm -f data/local/events.db   # optional: start from a clean event log
@@ -184,6 +198,11 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 **Demo app**
 - The first run is cached in `seed_events.json`; it isn't refreshed
   automatically when prompts or sample data change.
+- Each visitor's changes live only in their browser (localStorage); they're
+  lost if the browser storage is cleared, and they don't sync between devices.
+- Visitors' chat and option choices call the LLM on the app's API key.
+- The inbox is the hardcoded sample folder; emails in review can't be resolved
+  in the app yet.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the

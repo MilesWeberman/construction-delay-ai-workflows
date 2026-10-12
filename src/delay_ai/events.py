@@ -57,7 +57,8 @@ class Emit(NamedTuple):
 
 class EventStore:
     def __init__(self, path: Path | str = ":memory:"):
-        self.conn = sqlite3.connect(path)
+        # check_same_thread=False: the Streamlit app reruns on different threads.
+        self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute(SCHEMA)
 
