@@ -15,7 +15,7 @@ from delay_ai.impact import schedule_with_materials
 from delay_ai.llm import complete_structured
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Contact, Material
-from delay_ai.plan import current_activities
+from delay_ai.plan import apply_edits, current_activities
 from delay_ai.planner import EvaluatedOption
 
 
@@ -31,8 +31,13 @@ def recipients(
     activities: list[Activity],
     before: Schedule,
     after: Schedule,
+    expected: Schedule,
 ) -> list[tuple[Contact, list[str]]]:
-    """Everyone affected by the option, with the facts that matter to each of them."""
+    """Everyone affected by the option, with the facts that matter to each of them.
+
+    after is the plan once the option is applied; expected also assumes any
+    earlier deliveries asked for are confirmed.
+    """
     names = {a.id: a.name for a in activities}
     edited = {e.activity_id for e in option.edits if e.activity_id}
     moved = {a.id for a in activities if before.start_of(a.id) != after.start_of(a.id)}
@@ -53,11 +58,12 @@ def recipients(
     result = []
     for contact in contacts:
         if not contact.activity_ids:  # project team: hears about everything
-            facts = [
-                f"Option chosen: {option.title}",
-                f"Expected finish: {option.new_finish} ({option.recovered_days} days recovered)",
-                *activity_facts(set(names)),
-            ]
+            recovered = before.duration_days - expected.duration_days
+            finish = f"Expected finish: {expected.finish_date} (was {before.finish_date}, "
+            finish += f"{recovered} working days recovered)"
+            if any(e.type == "change_delivery" for e in option.edits):
+                finish += ", if the supplier confirms the earlier delivery"
+            facts = [f"Option chosen: {option.title}", finish, *activity_facts(set(names))]
             result.append((contact, facts))
         elif facts := activity_facts(set(contact.activity_ids)):
             result.append((contact, facts))
@@ -80,7 +86,9 @@ def recipients(
 SYSTEM_PROMPT = """You write short, clear emails from a UK main contractor's project
 team to colleagues, subcontractors and suppliers about a programme change.
 Be direct and practical. Say what changes for the reader and what you need from
-them. Don't state dates or numbers; the key facts are appended below your text.
+them. Never write dates, durations or day counts: the key facts are appended
+below your text, and they are the only source of numbers. Don't mention earlier
+conversations or agreements; this message is the first the reader hears of it.
 Don't add a sign-off name; sign as "{project} project team"."""
 
 
@@ -114,9 +122,15 @@ def make_action_handler(
         after_acts = current_activities(base, [e for e in events if e.id <= event.id])
         before = schedule_with_materials(before_acts, materials, start_date)
         after = schedule_with_materials(after_acts, materials, start_date)
+        # Recalculated now, not taken from when the option was proposed: the plan
+        # may have changed since (e.g. a material was linked).
+        deliveries = [e for e in option.edits if e.type == "change_delivery"]
+        _, asked, _ = apply_edits(deliveries, after_acts, materials, event.created_at.date())
+        expected = schedule_with_materials(after_acts, asked, start_date)
 
         messages = []
-        for contact, facts in recipients(option, contacts, materials, after_acts, before, after):
+        found = recipients(option, contacts, materials, after_acts, before, after, expected)
+        for contact, facts in found:
             text = draft(project, option, contact, facts)
             body = text.body.rstrip() + "\n\nKey facts:\n" + "\n".join(f"- {f}" for f in facts)
             messages.append(
