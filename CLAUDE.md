@@ -13,6 +13,8 @@ uv run ruff check . && uv run ruff format .
 uv run delay-ai ingest           # sample inbox -> data/local/events.db (real LLM, ~1.5 min)
 uv run delay-ai chat "<text>"    # delivery news, a suggested change, or a question
 uv run delay-ai link <PO> <activity> | choose <event> <n> | outbox
+uv run delay-ai serve            # web app on :8000 (build first: cd web && npm run build)
+cd web && npm run dev            # UI dev server on :5173, proxies /api to :8000
 ```
 
 `ANTHROPIC_API_KEY` goes in `.env` (gitignored). Default model
@@ -35,6 +37,10 @@ EmailReceived / ChatMessageReceived -> ingestion.py / chat.py
 State is rebuilt from events, never stored separately: `materials.py`
 (materials table) and `plan.py` (schedule plus chosen options).
 
+The web app: `view.py` turns events into page data, `api.py` (FastAPI, stateless)
+replays the cached seed plus the browser's own events on each request, and
+`web/` is the React UI. The browser keeps its events in localStorage.
+
 ## Design rules
 
 - **Rules first, LLM for the gaps, then checks.** The LLM is never the only
@@ -54,6 +60,7 @@ State is rebuilt from events, never stored separately: `materials.py`
   previous PR branch and open it with `--base` on that branch. Body starts with
   "Stacked on #N."
 - Any deliberate shortcut goes into README "Pilot simplifications" in the same PR.
+- After UI changes run `cd web && npm run build` (type checks) and look at the page.
 - Tests never call a real LLM: use `tests/fakes.py` (canned answers for the
   sample inbox) or pass a fake function into the handler factory.
 - `data/sample/README.md` lists the expected outcome for each sample email; keep

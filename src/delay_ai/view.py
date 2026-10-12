@@ -92,7 +92,7 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
     links = [
         {
             "po": s.payload["po_number"],
-            "material": by_po[s.payload["po_number"]].description,
+            "material": capitalised(by_po[s.payload["po_number"]].description),
             "supplier": by_po[s.payload["po_number"]].supplier,
             "delivery": str(by_po[s.payload["po_number"]].planned_delivery),
             "suggested": s.payload["by_llm"] or s.payload["by_rules"],
@@ -112,7 +112,12 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
     for m in materials:
         kind = "delivery_moved" if m.po_number in moved else "delivery"
         calendar.append(
-            {"title": m.description, "start": str(m.planned_delivery), "end": None, "kind": kind}
+            {
+                "title": capitalised(m.description),
+                "start": str(m.planned_delivery),
+                "end": None,
+                "kind": kind,
+            }
         )
     first = next((d for d in delays if d.payload["project_slip_days"] > 0), None)
     calendar_start = (
@@ -175,7 +180,7 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
         "materials": [
             {
                 "po": m.po_number,
-                "material": m.description,
+                "material": capitalised(m.description),
                 "supplier": m.supplier,
                 "delivery": str(m.planned_delivery),
                 "status": supplier_says.get(m.po_number, "ordered"),

@@ -14,3 +14,7 @@ data/local/
 .DS_Store
 .idea/
 .vscode/
+
+# Web app
+web/node_modules/
+web/dist/
