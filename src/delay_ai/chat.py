@@ -1,9 +1,10 @@
-"""The chat box: delivery news, suggested schedule changes, and questions.
+"""The chat box: delivery news, site news, suggested schedule changes, and questions.
 
-The LLM decides which of the three a message is. News goes through the same
-pipeline as email. A suggested change becomes schedule edits that the CPM
-scores, and can then be chosen like a recovery option. Questions are answered
-from the knowledge files and the live plan.
+The LLM decides which of the four a message is. Delivery news goes through the
+same pipeline as email. Site news (weather, labour, plant, access) becomes "takes
+longer" or "can't start before" edits that are applied to the plan. A suggested
+change becomes edits that the CPM scores, and can then be chosen like a recovery
+option. Questions are answered from the knowledge files and the live plan.
 """
 
 from collections.abc import Callable
@@ -14,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from delay_ai import knowledge
 from delay_ai.events import (
+    ACTIVITY_DISRUPTED,
     CHAT_REPLIED,
     DELIVERY_CONFIRMED,
     DELIVERY_DATE_CHANGED,
@@ -24,20 +26,32 @@ from delay_ai.events import (
     EventStore,
 )
 from delay_ai.impact import schedule_with_materials
+from delay_ai.ingestion import MIN_CONFIDENCE
 from delay_ai.llm import complete_structured
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity
-from delay_ai.plan import current_activities
+from delay_ai.plan import SITE_EDITS, Edit, apply_edits, current_activities
 from delay_ai.planner import RecoveryPlan, describe_plan, evaluate_options
 
 
 class Intent(BaseModel):
-    intent: Literal["delivery_news", "schedule_change", "question"] = Field(
+    intent: Literal["delivery_news", "site_news", "schedule_change", "question"] = Field(
         description="""delivery_news: news about a material order or delivery date.
+site_news: something on site stops or slows work: weather, labour or crew
+availability, plant breakdown, access, a failed inspection.
 schedule_change: the user proposes changing the programme (resequence, speed up,
 ask a supplier for an earlier delivery).
 question: anything else, e.g. asking about the plan, a delay or construction."""
     )
+
+
+class SiteNews(BaseModel):
+    edits: list[Edit] = Field(
+        description="Only lengthen (a task takes extra working days) or not_before "
+        "(a task can't start before a date)"
+    )
+    reason: str = Field(description="A few words, e.g. 'storm, no crane lifts'")
+    confidence: float = Field(description="0 to 1")
 
 
 class Answer(BaseModel):
@@ -65,6 +79,25 @@ def propose_change_with_llm(text: str, plan: str) -> RecoveryPlan:
     return complete_structured(CHANGE_PROMPT, f"Suggestion: {text}\n\n{plan}", RecoveryPlan)
 
 
+SITE_PROMPT = f"""You are a senior UK construction planner. A member of the site
+team reports something that stops or slows work. Turn it into edits to the
+programme:
+- lengthen: activity_id takes `days` more working days (e.g. a smaller gang, or
+  days lost to weather while the task is under way)
+- not_before: activity_id can't start before the date `not_before` (e.g. the crew
+  isn't available until then, or a weather window)
+Only edit activities the news really affects, using the dates in the programme
+to judge which tasks are under way or due to start. Lower your confidence if you
+had to guess.
+
+{knowledge.load()}"""
+
+
+def extract_site_news_with_llm(text: str, plan: str, today: date) -> SiteNews:
+    user = f"Today is {today:%A %d %B %Y}.\nSite news: {text}\n\n{plan}"
+    return complete_structured(SITE_PROMPT, user, SiteNews)
+
+
 ANSWER_PROMPT = f"""You are a senior UK construction planner answering questions
 about a live project programme. Be concise and practical. Only quote dates and
 numbers that appear in the programme you are given; never calculate new ones.
@@ -84,6 +117,7 @@ def make_chat_handler(
     classify: Callable[[str], Intent] = classify_with_llm,
     propose_change: Callable[[str, str], RecoveryPlan] = propose_change_with_llm,
     answer: Callable[[str, str], Answer] = answer_with_llm,
+    extract_site_news: Callable[[str, str, date], SiteNews] = extract_site_news_with_llm,
 ) -> Callable[[Event], list[Emit]]:
     def reply(event: Event, text: str) -> Emit:
         return Emit(CHAT_REPLIED, {"chat_event": event.id, "text": text})
@@ -104,6 +138,31 @@ def make_chat_handler(
 
         if intent == "question":
             return [reply(event, answer(text, plan).text)]
+
+        if intent == "site_news":
+            today = event.created_at.date()
+            news = extract_site_news(text, plan, today)
+            _, _, problems = apply_edits(news.edits, activities, materials, today)
+            problems += [
+                f"{e.type} isn't site news" for e in news.edits if e.type not in SITE_EDITS
+            ]
+            if not news.edits:
+                problems.append("I couldn't tell which task is affected")
+            if news.confidence < MIN_CONFIDENCE:
+                problems.append(f"I'm not sure I understood ({news.confidence:.0%} confident)")
+            if problems:
+                return [reply(event, f"I couldn't record that: {'; '.join(problems)}.")]
+            names = {a.id: a.name for a in activities}
+            summary = "; ".join(describe_site_edit(e, names) for e in news.edits)
+            summary += f" ({news.reason})"
+            payload = {
+                "chat_event": event.id,
+                "edits": [e.model_dump(mode="json") for e in news.edits],
+                "reason": news.reason,
+                "summary": summary,
+            }
+            text = f"Recorded on the schedule: {summary}. I'll flag it if completion moves."
+            return [Emit(ACTIVITY_DISRUPTED, payload), reply(event, text)]
 
         proposed = propose_change(text, plan).options
         options, rejected = evaluate_options(
@@ -129,6 +188,13 @@ def make_chat_handler(
         return [Emit(RECOVERY_OPTIONS_PROPOSED, payload), reply(event, text)]
 
     return handle
+
+
+def describe_site_edit(edit: Edit, names: dict[str, str]) -> str:
+    name = names[edit.activity_id]
+    if edit.type == "lengthen":
+        return f"{name} takes {edit.days} more working days"
+    return f"{name} can't start before {edit.not_before:%d %b %Y}"
 
 
 def summarise_news(emits: list[Emit]) -> str:

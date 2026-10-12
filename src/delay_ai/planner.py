@@ -7,12 +7,12 @@ from pydantic import BaseModel, Field
 
 from delay_ai import knowledge
 from delay_ai.cpm import Schedule
-from delay_ai.events import RECOVERY_OPTIONS_PROPOSED, Emit, Event, EventStore
-from delay_ai.impact import DeliveryImpact, schedule_with_materials
+from delay_ai.events import DELAY_ASSESSED, RECOVERY_OPTIONS_PROPOSED, Emit, Event, EventStore
+from delay_ai.impact import schedule_with_materials
 from delay_ai.llm import complete_structured
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Material
-from delay_ai.plan import Edit, apply_edits, current_activities
+from delay_ai.plan import SITE_EDITS, Edit, apply_edits, current_activities
 
 
 class RecoveryOption(BaseModel):
@@ -58,6 +58,8 @@ Each option is a list of edits to the programme:
 - remove_dependency: let activity_id start without waiting for predecessor_id
 - shorten: take days off activity_id (extra labour, longer shifts)
 - change_delivery: ask the supplier of po_number to deliver earlier, on new_delivery
+Use only these three edit types; lengthen and not_before record site news, they
+don't recover time.
 
 The days recovered are calculated for you afterwards, so don't state them.
 Explain the rationale in planning terms, be honest about risks, and give a rough
@@ -66,21 +68,30 @@ cost. Use this context, and follow the playbook:
 {knowledge.load()}"""
 
 
-def propose_with_llm(
-    impact: DeliveryImpact,
-    schedule: Schedule,
-    activities: list[Activity],
-    materials: list[Material],
-) -> RecoveryPlan:
-    user = f"""Delay: {impact.po_number} for {impact.activity_id} moved from {impact.old_delivery}
-to {impact.new_delivery}. The finish moved from {impact.old_finish} to {impact.new_finish}
-({impact.project_slip_days} working days).
+def describe_delay(event: Event) -> str:
+    """One line for the planner: what happened and what it did to the finish."""
+    p = event.payload
+    if event.type == DELAY_ASSESSED:
+        cause = (
+            f"Late delivery: {p['po_number']} for {p['activity_id']} moved from "
+            f"{p['old_delivery']} to {p['new_delivery']}."
+        )
+    else:
+        cause = f"Site news: {p['summary']}."
+    return (
+        f"{cause} The finish moved from {p['old_finish']} to {p['new_finish']} "
+        f"({p['project_slip_days']} working days)."
+    )
 
-{describe_plan(schedule, activities, materials)}"""
+
+def propose_with_llm(
+    delay: str, schedule: Schedule, activities: list[Activity], materials: list[Material]
+) -> RecoveryPlan:
+    user = f"{delay}\n\n{describe_plan(schedule, activities, materials)}"
     return complete_structured(SYSTEM_PROMPT, user, RecoveryPlan)
 
 
-Proposer = Callable[[DeliveryImpact, Schedule, list[Activity], list[Material]], RecoveryPlan]
+Proposer = Callable[[str, Schedule, list[Activity], list[Material]], RecoveryPlan]
 
 
 def evaluate_options(
@@ -95,6 +106,7 @@ def evaluate_options(
     options, rejected = [], []
     for option in proposed:
         new_acts, new_mats, problems = apply_edits(option.edits, activities, materials, today)
+        problems += [f"{e.type} doesn't recover time" for e in option.edits if e.type in SITE_EDITS]
         if problems:
             rejected.append({"title": option.title, "problems": problems})
             continue
@@ -113,21 +125,22 @@ def evaluate_options(
 def make_planner_handler(
     store: EventStore, base: list[Activity], start_date: date, propose: Proposer
 ) -> Callable[[Event], list[Emit]]:
+    """Handles DelayAssessed (late deliveries) and DisruptionAssessed (site news)."""
+
     def handle(event: Event) -> list[Emit]:
-        impact = DeliveryImpact.model_validate(event.payload)
-        if impact.project_slip_days <= 0:
+        if event.payload["project_slip_days"] <= 0:
             return []
         events = store.all()
         materials = build_materials(events)
         activities = current_activities(base, events)
         current = schedule_with_materials(activities, materials, start_date)
-        plan = propose(impact, current, activities, materials)
+        plan = propose(describe_delay(event), current, activities, materials)
         options, rejected = evaluate_options(
             plan.options, activities, materials, start_date, event.created_at.date()
         )
         payload = {
             "assessment_event": event.id,
-            "po_number": impact.po_number,
+            "po_number": event.payload.get("po_number"),
             "options": [o.model_dump(mode="json") for o in options],
             "rejected": rejected,
         }

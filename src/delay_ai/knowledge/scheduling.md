@@ -20,6 +20,12 @@ and the chatbot's prompts.
 - All dates and days recovered are calculated by the CPM engine, never by the
   LLM.
 
+## Site news
+- Weather, labour, plant or access problems are recorded as either "takes N more
+  working days" (the task is slowed while under way) or "can't start before a
+  date" (the crew or a weather window isn't available yet).
+- The effect on completion depends on float, like a late delivery.
+
 ## Recovery techniques
 - **Resequencing / fast-tracking**: overlap activities that were planned in
   series, e.g. facade following the frame floor by floor. Modelled as dropping a

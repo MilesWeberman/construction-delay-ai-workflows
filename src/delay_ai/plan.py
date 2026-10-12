@@ -1,26 +1,32 @@
-"""The current plan: the schedule export plus the options planners have chosen."""
+"""The current plan: the schedule export, plus site news and the options planners chose."""
 
 from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from delay_ai.events import OPTION_CHOSEN, Event
+from delay_ai.events import ACTIVITY_DISRUPTED, OPTION_CHOSEN, Event
 from delay_ai.models import Activity, Material
 
 MAX_SHORTEN = 0.3  # share of an activity's duration that acceleration can save
+MAX_LENGTHEN = 60  # working days; anything longer is more likely a misreading
 # Earlier deliveries only count once the supplier confirms them by email.
-PLAN_EDITS = {"remove_dependency", "shorten"}
+RECOVERY_EDITS = {"remove_dependency", "shorten"}
+# Site news (weather, labour, plant): a task takes longer or can't start yet.
+SITE_EDITS = {"lengthen", "not_before"}
 
 
 class Edit(BaseModel):
-    type: Literal["remove_dependency", "shorten", "change_delivery"]
-    activity_id: str | None = Field(description="For remove_dependency and shorten")
+    type: Literal["remove_dependency", "shorten", "change_delivery", "lengthen", "not_before"]
+    activity_id: str | None = Field(description="The activity the edit is about")
     predecessor_id: str | None = Field(description="For remove_dependency: the link to drop")
-    days: int | None = Field(description="For shorten: working days to take off")
+    days: int | None = Field(description="For shorten and lengthen: working days")
     po_number: str | None = Field(description="For change_delivery")
     new_delivery: date | None = Field(
         description="For change_delivery: the earlier date to ask for"
+    )
+    not_before: date | None = Field(
+        default=None, description="For not_before: the first date the activity can start"
     )
 
 
@@ -44,6 +50,16 @@ def apply_edits(
                 problems.append(f"Cannot shorten {edit.activity_id} by {edit.days} (max {limit})")
             else:
                 activity.duration_days -= edit.days
+        elif edit.type == "lengthen":
+            if activity is None or not edit.days or not 0 < edit.days <= MAX_LENGTHEN:
+                problems.append(f"Cannot lengthen {edit.activity_id} by {edit.days}")
+            else:
+                activity.duration_days += edit.days
+        elif edit.type == "not_before":
+            if activity is None or edit.not_before is None or edit.not_before < today:
+                problems.append(f"{edit.activity_id}: start date must be from {today}")
+            else:
+                activity.not_before = max(activity.not_before or edit.not_before, edit.not_before)
         elif edit.type == "change_delivery":
             material = mats.get(edit.po_number or "")
             if material is None or edit.new_delivery is None:
@@ -65,7 +81,11 @@ def current_activities(base: list[Activity], events: list[Event]) -> list[Activi
     for event in events:
         if event.type == OPTION_CHOSEN:
             edits = [Edit.model_validate(e) for e in event.payload["option"]["edits"]]
-            edits = [e for e in edits if e.type in PLAN_EDITS]
-            # Already validated when proposed; skip anything the plan has since outgrown.
-            activities, _, _ = apply_edits(edits, activities, [], date.min)
+            edits = [e for e in edits if e.type in RECOVERY_EDITS]
+        elif event.type == ACTIVITY_DISRUPTED:
+            edits = [Edit.model_validate(e) for e in event.payload["edits"]]
+        else:
+            continue
+        # Already validated when recorded; skip anything the plan has since outgrown.
+        activities, _, _ = apply_edits(edits, activities, [], date.min)
     return activities

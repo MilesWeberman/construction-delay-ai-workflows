@@ -20,6 +20,7 @@ class Activity(BaseModel):
     trade: str
     duration_days: int
     predecessors: list[str] = []
+    not_before: date | None = None  # e.g. the crew isn't available until then
 
 
 class Material(BaseModel):
