@@ -63,21 +63,29 @@ To use another provider, set its key and any
 Gmail and Outlook credentials are not needed yet; they come with the email
 connectors.
 
-## Demo app
+## Web app
+
+React (Vite + TypeScript) in `web/`, over a small FastAPI API in
+`src/delay_ai/api.py`. Build the UI once, then one command serves both:
 
 ```bash
-uv run streamlit run src/delay_ai/app.py   # http://localhost:8501
+cd web && npm install && npm run build && cd ..
+uv run delay-ai serve        # http://localhost:8000
 ```
 
-A scheduling app with AI built in, on one page: the project's completion date,
-AI alerts (a late delivery, with recovery options to choose; new materials to
-place on the schedule), the schedule as a calendar, the inbox and materials as
-tables (click an email to read it), and the outbox once an option is chosen.
-The AI assistant is in the sidebar.
+For UI development, run `uv run delay-ai serve` and `cd web && npm run dev`
+(http://localhost:5173, which proxies `/api` to the server).
 
-The app opens instantly from the cached first run (see below). Whatever a
-visitor does is saved in their own browser's localStorage, so each device keeps
-its own demo; **Reset demo** in the sidebar starts again from the cached run.
+One page, like a scheduling app with AI built in: the completion date, AI
+alerts (a late delivery with recovery options to choose), the schedule as a
+calendar with the deliveries the AI matched to tasks below it, to confirm, the
+inbox and materials as tables (click an email to read it), and the outbox once an option
+is chosen. The assistant is on the right.
+
+The server keeps no state. Every visitor starts from the cached first run (see
+below); what they do is saved as events in their own browser's localStorage and
+sent with each request, so each device keeps its own demo. **Reset demo** starts
+again from the cached run.
 
 ## Run (CLI)
 
@@ -213,6 +221,9 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - The inbox is the hardcoded sample folder; emails in review can't be resolved
   in the app yet.
 - The schedule is shown as a calendar only; there's no Gantt or critical-path view.
+- The server trusts the events the browser sends back; fine for a demo, not for
+  real users (that needs accounts and server-side storage).
+- Choosing an option waits on the LLM for about a minute with no live progress.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the
