@@ -9,11 +9,13 @@ import Outbox from './sections/Outbox'
 import Schedule from './sections/Schedule'
 
 export type Act = (action: Action, busyLabel: string) => Promise<void>
+type Tab = 'schedule' | 'inbox' | 'outbox'
 
 export default function App() {
   const [view, setView] = useState<View | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('schedule')
 
   const load = async (action?: Action, busyLabel?: string) => {
     setBusy(busyLabel ?? null)
@@ -34,25 +36,46 @@ export default function App() {
 
   if (!view) return <div className="splash">{error ?? 'Loading…'}</div>
 
+  const tabs: [Tab, string, string | null][] = [
+    ['schedule', 'Schedule', null],
+    ['inbox', 'Inbox', view.counts.review ? `${view.counts.review} to review` : null],
+    ['outbox', 'Outbox', view.counts.drafts ? `${view.counts.drafts} drafts` : null],
+  ]
+
   return (
     <div className="layout">
       <main className="main">
         <Header view={view} />
+        <nav className="tabs">
+          {tabs.map(([id, label, badge]) => (
+            <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+              {label}
+              {badge && <span className="badge">{badge}</span>}
+            </button>
+          ))}
+        </nav>
         {error && <div className="banner">{error}</div>}
-        <Alerts view={view} act={act} busy={busy !== null} />
-        <Section title="Schedule">
-          <Schedule view={view} />
-          {view.links.length > 0 && <Links view={view} act={act} busy={busy !== null} />}
-        </Section>
-        <Section title="Inbox" note="A fixed sample inbox for the demo">
-          <Inbox emails={view.inbox} />
-        </Section>
-        <Section title="Materials">
-          <Materials items={view.materials} />
-        </Section>
-        {view.outbox.length > 0 && (
-          <Section title="Outbox" note="Drafts only. Nothing is sent in the pilot.">
-            <Outbox messages={view.outbox} />
+
+        {tab === 'schedule' && (
+          <>
+            <Alerts view={view} act={act} busy={busy !== null} />
+            <Section title="Schedule">
+              <Schedule view={view} />
+              {view.links.length > 0 && <Links view={view} act={act} busy={busy !== null} />}
+            </Section>
+            <Section title="Materials">
+              <Materials items={view.materials} />
+            </Section>
+          </>
+        )}
+        {tab === 'inbox' && (
+          <Section title="Inbox" note="A fixed sample inbox for the demo">
+            <Inbox emails={view.inbox} act={act} busy={busy !== null} />
+          </Section>
+        )}
+        {tab === 'outbox' && (
+          <Section title="Outbox" note="Drafted by AI. Nothing is sent automatically.">
+            <Outbox messages={view.outbox} act={act} busy={busy !== null} />
           </Section>
         )}
       </main>

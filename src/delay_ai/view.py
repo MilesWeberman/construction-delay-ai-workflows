@@ -17,6 +17,7 @@ from delay_ai.events import (
     EMAIL_IGNORED,
     EMAIL_RECEIVED,
     MATERIAL_ORDERED,
+    MESSAGE_SENT,
     NEEDS_REVIEW,
     OPTION_CHOSEN,
     RECOVERY_OPTIONS_PROPOSED,
@@ -26,6 +27,7 @@ from delay_ai.impact import schedule_with_materials
 from delay_ai.loaders import load_project, load_schedule
 from delay_ai.materials import build_materials, pending_link_suggestions
 from delay_ai.plan import current_activities
+from delay_ai.review import open_reviews
 
 
 def of_type(events: list[Event], *types: str) -> list[Event]:
@@ -125,36 +127,92 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
     )
 
     received = {e.payload["message_id"]: e for e in of_type(events, EMAIL_RECEIVED)}
+    unsettled = {e.payload["source_email"]: e for e in open_reviews(events)}
 
-    def read_as(email_event: Event | None) -> tuple[str, list[str]]:
+    def domain(address: str) -> str:
+        return address.rsplit("@", 1)[-1]
+
+    def read_as(email_id: str, email_event: Event | None) -> tuple[str, str]:
+        """(status, label) for what the AI made of an email."""
         found = [e for e in events if email_event and e.caused_by == email_event.id]
+        types = {e.type for e in found}
+        if NEEDS_REVIEW in types:
+            return (
+                ("review", "Needs your review")
+                if email_id in unsettled
+                else ("reviewed", "Reviewed")
+            )
         for e in found:
             if e.type == DELIVERY_DATE_CHANGED:
                 new = date.fromisoformat(e.payload["new_delivery"])
-                return f"Delivery moved to {new:%d %b}", []
-            if e.type == NEEDS_REVIEW:
-                return "Needs your review", e.payload["problems"]
+                return "moved", f"Delivery moved to {new:%d %b}"
             if e.type == DELIVERY_CONFIRMED:
-                return "Delivery confirmed", []
+                return "confirmed", "Delivery confirmed on time"
             if e.type == EMAIL_IGNORED:
-                return "Not relevant", []
+                return "ignored", "Not about deliveries"
         orders = of_type(found, MATERIAL_ORDERED)
-        return (f"{len(orders)} order{'s' * (len(orders) > 1)} recorded" if orders else ""), []
+        if orders:
+            return "orders", f"Added {len(orders)} deliver{'ies' if len(orders) > 1 else 'y'}"
+        return "pending", "Not read yet"
 
     inbox = []
     for email in reversed(FolderEmailSource(data / "emails").fetch()):
-        result, problems = read_as(received.get(email.message_id))
+        status, label = read_as(email.message_id, received.get(email.message_id))
+        review = None
+        if status == "review":
+            flagged = unsettled[email.message_id].payload
+            items = flagged["extraction"]["items"]
+            candidates = [m for m in materials if domain(m.supplier_email) == domain(email.sender)]
+            suggested = next((i["po_number"] for i in items if i["po_number"] in by_po), None)
+            review = {
+                "problems": flagged["problems"],
+                "suggested_po": suggested or (candidates[0].po_number if candidates else None),
+                "candidates": [
+                    {"po": m.po_number, "material": capitalised(m.description),
+                     "delivery": str(m.planned_delivery)}
+                    for m in candidates
+                ],
+            }  # fmt: skip
         inbox.append(
             {"id": email.message_id, "date": email.sent_at.isoformat(), "from": email.sender,
-             "subject": email.subject, "body": email.body, "result": result,
-             "problems": problems}
+             "subject": email.subject, "body": email.body, "status": status, "label": label,
+             "review": review}
         )  # fmt: skip
 
-    supplier_says = {}
+    # Materials: what the supplier last said, and what it does to completion.
+    first_planned, latest_news, latest_effect = {}, {}, {}
+    for e in of_type(events, MATERIAL_ORDERED):
+        m = e.payload["material"]
+        first_planned[m["po_number"]] = m["planned_delivery"]
     for e in of_type(events, DELIVERY_CONFIRMED, DELIVERY_DATE_CHANGED):
-        supplier_says[e.payload["po_number"]] = (
-            "confirmed" if e.type == DELIVERY_CONFIRMED else "moved"
-        )
+        latest_news[e.payload["po_number"]] = e.type
+    for e in of_type(events, DELAY_ASSESSED):
+        latest_effect[e.payload["po_number"]] = e
+    recovered = {p.payload.get("assessment_event") for p in proposals if p.id in chosen}
+
+    def material_status(m) -> tuple[str, str]:
+        if latest_news.get(m.po_number) == DELIVERY_DATE_CHANGED:
+            effect = latest_effect.get(m.po_number)
+            if effect is None:
+                return "late_unchecked", "Late: not checked yet"
+            slip = effect.payload["project_slip_days"]
+            if slip <= 0:
+                return "late_absorbed", "Late: no effect on completion"
+            if effect.id in recovered:
+                return "late_recovered", "Late: recovery chosen"
+            return "late_slips", f"Late: completion +{slip} days"
+        if latest_news.get(m.po_number) == DELIVERY_CONFIRMED:
+            return "confirmed", "Confirmed by supplier"
+        if m.activity_id is None:
+            return "unmatched", "Not matched to a task"
+        return "on_track", "On track"
+
+    sent = {e.payload["message_id"] for e in of_type(events, MESSAGE_SENT)}
+    outbox = [
+        {**m, "id": f"{e.id}:{i}", "plan": e.payload["title"], "sent": f"{e.id}:{i}" in sent}
+        for e in reversed(of_type(events, ACTION_PLAN_DRAFTED))
+        for i, m in enumerate(e.payload["messages"])
+    ]
 
     replies = {e.payload["chat_event"]: e for e in of_type(events, CHAT_REPLIED)}
     chat = []
@@ -183,15 +241,19 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
                 "material": capitalised(m.description),
                 "supplier": m.supplier,
                 "delivery": str(m.planned_delivery),
-                "status": supplier_says.get(m.po_number, "ordered"),
+                "was": first_planned[m.po_number]
+                if first_planned.get(m.po_number) != str(m.planned_delivery)
+                else None,
+                "status": material_status(m)[0],
+                "label": material_status(m)[1],
                 "needed_for": names.get(m.activity_id or ""),
             }
             for m in materials
-        ],  # fmt: skip
-        "outbox": [
-            {**m, "plan": e.payload["title"]}
-            for e in reversed(of_type(events, ACTION_PLAN_DRAFTED))
-            for m in e.payload["messages"]
         ],
+        "outbox": outbox,
+        "counts": {
+            "review": len(unsettled),
+            "drafts": sum(not m["sent"] for m in outbox),
+        },
         "chat": chat,
     }

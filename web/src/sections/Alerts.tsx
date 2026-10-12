@@ -7,30 +7,31 @@ type Props = { view: View; act: Act; busy: boolean }
 
 export default function Alerts({ view, act, busy }: Props) {
   return (
-    <div className="alerts">
+    <div className="alerts" id="alerts">
       {view.alerts.map((alert, i) => {
         const resolved = Boolean(alert.recovery?.chosen)
+        const delay = alert.kind === 'delay'
         return (
-        <div className="card alert" key={i}>
-          <span className={`dot ${resolved ? 'ok' : alert.kind === 'delay' ? 'warn' : 'info'}`} />
-          <div className="grow">
-            <strong>{alert.headline}</strong>
-            {alert.kind === 'delay' && (
-              <p className="muted">
+          <div className={`card alert ${resolved ? 'resolved' : delay ? 'action' : ''}`} key={i}>
+            <span className="eyebrow">
+              {resolved ? 'Resolved' : delay ? 'Action needed' : 'Your suggestion'}
+            </span>
+            <h3>{alert.headline}</h3>
+            {delay && (
+              <p className={resolved ? 'muted' : 'consequence'}>
                 {resolved
-                  ? `Recovered. It had moved completion ${days(alert.slip_days)} later.`
-                  : `Completion moves ${days(alert.slip_days)} later.`}
+                  ? `It had moved completion ${days(alert.slip_days)} later. A recovery option was chosen.`
+                  : `This pushes completion ${days(alert.slip_days)} later. Choose how to recover.`}
               </p>
             )}
             {alert.recovery && (
-              <RecoveryOptions recovery={alert.recovery} act={act} busy={busy} open={alert.kind === 'suggestion'} />
+              <RecoveryOptions recovery={alert.recovery} act={act} busy={busy} open={!delay} />
             )}
           </div>
-        </div>
         )
       })}
       {view.absorbed.length > 0 && (
-        <p className="muted small">No effect on completion: {view.absorbed.join('; ')}.</p>
+        <p className="muted small">Also late, with no effect on completion: {view.absorbed.join('; ')}.</p>
       )}
     </div>
   )
@@ -44,12 +45,14 @@ function RecoveryOptions({ recovery, act, busy, open }: { recovery: Recovery; ac
   if (!recovery.options.length) return <p className="muted">No workable way to recover was found.</p>
   return (
     <>
-      <button className="link" onClick={() => setShown(!shown)}>
-        {shown ? 'Hide' : 'See'} {recovery.options.length} ways to recover
-      </button>
+      {!shown && (
+        <button className="primary cta" onClick={() => setShown(true)}>
+          Choose how to recover ({recovery.options.length} options)
+        </button>
+      )}
       {shown && (
         <div className="options">
-          <p className="muted small">Suggested by AI, then checked against the schedule.</p>
+          <p className="muted small">Suggested by AI, then checked against the schedule. Pick one.</p>
           {recovery.options.map((o) => (
             <OptionRow key={o.number} option={o} busy={busy}
               onChoose={() => act({ kind: 'choose', options_event: recovery.event, number: o.number },
@@ -91,7 +94,7 @@ export function Links({ view, act, busy }: Props) {
   const pick = (po: string, suggested: string | null) => picks[po] ?? suggested ?? view.activities[0].id
   const confirm = (pairs: [string, string][]) => act({ kind: 'link', links: pairs }, 'Updating the schedule')
   return (
-    <div className="card">
+    <div className="card" id="matching">
       <strong>AI matched {view.links.length} deliveries to the tasks that need them</strong>
       <p className="muted">Check each one. Once confirmed, a late delivery is checked against its task.</p>
       <div className="rows">
