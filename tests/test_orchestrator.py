@@ -49,3 +49,18 @@ def test_ingest_emails_skips_already_seen(sample_dir):
     assert ingest_emails(source, store) == 12
     assert ingest_emails(source, store) == 0
     assert all(e.type == EMAIL_RECEIVED for e in store.all())
+
+
+def test_reports_each_handled_step():
+    store = EventStore()
+    store.append("A", {})
+    steps = []
+
+    def boom(event):
+        raise ValueError("bad")
+
+    handlers = {"A": lambda e: [Emit("B", {}), Emit("B", {})], "B": boom}
+    Orchestrator(store, handlers, on_step=steps.append).run()
+
+    assert steps[0].startswith("A #1 -> B (")
+    assert steps[1:] == ["B #2 failed: ValueError", "B #3 failed: ValueError"]
