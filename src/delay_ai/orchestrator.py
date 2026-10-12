@@ -1,5 +1,6 @@
 """Runs pending events through their handlers until nothing is left to do."""
 
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -12,9 +13,15 @@ Handler = Callable[[Event], list[Emit]]
 
 
 class Orchestrator:
-    def __init__(self, store: EventStore, handlers: dict[str, Handler]):
+    def __init__(
+        self,
+        store: EventStore,
+        handlers: dict[str, Handler],
+        on_step: Callable[[str], None] | None = None,
+    ):
         self.store = store
         self.handlers = handlers
+        self.on_step = on_step or (lambda message: None)  # progress, e.g. print
 
     def run(self, max_steps: int = 1000) -> int:
         """Process events (including newly emitted ones) until none are pending."""
@@ -32,12 +39,16 @@ class Orchestrator:
         if handler is None:  # nothing reacts to this event type, e.g. a final outcome
             self.store.complete(event.id, [])
             return
+        started = time.monotonic()
         try:
             emitted = handler(event)
         except Exception as e:
             self.store.fail(event.id, repr(e))
+            self.on_step(f"{event.type} #{event.id} failed: {type(e).__name__}")
             return
         self.store.complete(event.id, emitted)
+        produced = ", ".join(dict.fromkeys(e.type for e in emitted)) or "nothing to do"
+        self.on_step(f"{event.type} #{event.id} -> {produced} ({time.monotonic() - started:.1f}s)")
 
 
 def ingest_emails(source: EmailSource, store: EventStore) -> int:

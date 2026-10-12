@@ -6,6 +6,7 @@ import litellm
 from pydantic import BaseModel
 
 DEFAULT_MODEL = "anthropic/claude-sonnet-5"
+TIMEOUT_SECONDS = 180  # the planner call is the slowest, usually under a minute
 KEY_FOR_PROVIDER = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 
 litellm.suppress_debug_info = True  # hide litellm's "Give Feedback" banner on errors
@@ -28,5 +29,6 @@ def complete_structured[T: BaseModel](system: str, user: str, schema: type[T]) -
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         response_format=schema,
         max_tokens=4096,
+        timeout=TIMEOUT_SECONDS,
     )
     return schema.model_validate_json(response.choices[0].message.content)

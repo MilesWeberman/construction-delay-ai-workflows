@@ -55,10 +55,16 @@ def handlers(store: EventStore, data: Path) -> dict:
     }
 
 
+def run(store: EventStore, data: Path) -> None:
+    """Process everything pending, printing each step as it finishes (LLM calls take a while)."""
+    print("Working (each LLM step takes a few seconds, recovery options up to a minute):")
+    Orchestrator(store, handlers(store, data), on_step=lambda m: print(f"  {m}", flush=True)).run()
+
+
 def ingest(store: EventStore, data: Path, emails: Path) -> None:
     print(f"{ingest_emails(FolderEmailSource(emails), store)} new emails")
     print(f"{store.retry_failed()} failed events retried")
-    Orchestrator(store, handlers(store, data)).run()
+    run(store, data)
     report(store)
 
 
@@ -115,7 +121,7 @@ def report(store: EventStore) -> None:
 
 def chat(store: EventStore, data: Path, text: str, author: str) -> None:
     ingest_chat(text, author, store)
-    Orchestrator(store, handlers(store, data)).run()
+    run(store, data)
     report(store)
 
 
@@ -127,7 +133,7 @@ def link(store: EventStore, data: Path, po_number: str, activity_id: str) -> Non
     emit = planner_link(po_number, activity_id)
     store.append(emit.type, emit.payload)
     print(f"Linked {po_number} to {activity_id}")
-    Orchestrator(store, handlers(store, data)).run()
+    run(store, data)
     report(store)
 
 
@@ -138,7 +144,7 @@ def choose(store: EventStore, data: Path, options_event: int, number: int) -> No
     emit = choose_option(event, number)
     store.append(emit.type, emit.payload)
     print(f"Chose: {emit.payload['option']['title']}")
-    Orchestrator(store, handlers(store, data)).run()
+    run(store, data)
     outbox(store)
 
 
