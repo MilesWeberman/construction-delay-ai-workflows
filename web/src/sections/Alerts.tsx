@@ -29,7 +29,6 @@ export default function Alerts({ view, act, busy }: Props) {
         </div>
         )
       })}
-      {view.links.length > 0 && <Links view={view} act={act} busy={busy} />}
       {view.absorbed.length > 0 && (
         <p className="muted small">No effect on completion: {view.absorbed.join('; ')}.</p>
       )}
@@ -87,7 +86,7 @@ function OptionRow({ option, busy, onChoose }: { option: Option; busy: boolean; 
   )
 }
 
-function Links({ view, act, busy }: Props) {
+export function Links({ view, act, busy }: Props) {
   const [picks, setPicks] = useState<Record<string, string>>({})
   const pick = (po: string, suggested: string | null) => picks[po] ?? suggested ?? view.activities[0].id
   const confirm = (pairs: [string, string][]) => act({ kind: 'link', links: pairs }, 'Updating the schedule')

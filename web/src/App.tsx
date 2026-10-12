@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { type Action, type View, fetchView, resetSaved } from './api'
-import Alerts from './sections/Alerts'
+import Alerts, { Links } from './sections/Alerts'
 import Assistant from './sections/Assistant'
 import Header from './sections/Header'
 import Inbox from './sections/Inbox'
@@ -42,6 +42,7 @@ export default function App() {
         <Alerts view={view} act={act} busy={busy !== null} />
         <Section title="Schedule">
           <Schedule view={view} />
+          {view.links.length > 0 && <Links view={view} act={act} busy={busy !== null} />}
         </Section>
         <Section title="Inbox" note="A fixed sample inbox for the demo">
           <Inbox emails={view.inbox} />

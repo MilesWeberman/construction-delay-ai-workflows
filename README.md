@@ -77,9 +77,9 @@ For UI development, run `uv run delay-ai serve` and `cd web && npm run dev`
 (http://localhost:5173, which proxies `/api` to the server).
 
 One page, like a scheduling app with AI built in: the completion date, AI
-alerts (a late delivery with recovery options to choose; deliveries the AI
-matched to tasks, to confirm), the schedule as a calendar, the inbox and
-materials as tables (click an email to read it), and the outbox once an option
+alerts (a late delivery with recovery options to choose), the schedule as a
+calendar with the deliveries the AI matched to tasks below it, to confirm, the
+inbox and materials as tables (click an email to read it), and the outbox once an option
 is chosen. The assistant is on the right.
 
 The server keeps no state. Every visitor starts from the cached first run (see
