@@ -7,8 +7,11 @@ seed + visitor events in memory, runs any action, and returns the page data and
 the visitor's events to store again.
 """
 
+import base64
 import hashlib
 import json
+import os
+import secrets
 from datetime import date
 from functools import cache
 from pathlib import Path
@@ -16,6 +19,8 @@ from typing import Annotated, Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi import Request as HttpRequest
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -34,6 +39,30 @@ WEB_BUILD = ROOT / "web" / "dist"
 
 load_dotenv()
 app = FastAPI(title="Delay AI")
+# Set to put the whole app behind one shared password (the browser asks for it).
+PASSWORD = os.environ.get("DEMO_PASSWORD", "")
+
+
+@app.middleware("http")
+async def require_password(request: HttpRequest, call_next):
+    if not PASSWORD or request.url.path == "/api/health":
+        return await call_next(request)
+    scheme, _, encoded = request.headers.get("authorization", "").partition(" ")
+    try:
+        _, _, given = base64.b64decode(encoded).decode().partition(":")
+    except ValueError:
+        given = ""
+    if scheme.lower() == "basic" and secrets.compare_digest(given.encode(), PASSWORD.encode()):
+        return await call_next(request)
+    return Response(
+        "Password required", status_code=401, headers={"WWW-Authenticate": 'Basic realm="Delay AI"'}
+    )
+
+
+@app.get("/api/health")
+def health() -> dict[str, bool]:
+    """For the host's health check; never needs the password."""
+    return {"ok": True}
 
 
 @cache

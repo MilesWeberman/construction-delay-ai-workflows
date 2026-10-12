@@ -3,6 +3,7 @@
 import argparse
 import fcntl
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -187,13 +188,15 @@ def main() -> None:
     seed_cmd.add_argument("--emails", type=Path, default=Path("data/sample/emails"))
     seed_cmd.add_argument("--out", type=Path, default=Path("data/sample/seed_events.json"))
     serve_cmd = commands.add_parser("serve", help="Run the web app (API + built React UI)")
-    serve_cmd.add_argument("--port", type=int, default=8000)
+    # Hosts like Railway set PORT; the Docker image sets HOST=0.0.0.0.
+    serve_cmd.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    serve_cmd.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     args = parser.parse_args()
 
     if args.command == "serve":  # stateless, so no database or lock
         import uvicorn
 
-        uvicorn.run("delay_ai.api:app", port=args.port)
+        uvicorn.run("delay_ai.api:app", host=args.host, port=args.port)
         return
     if args.command in {"ingest", "chat", "link", "choose", "seed"} and (key := missing_api_key()):
         sys.exit(f"{key} is not set for model {model()}. Add it to .env (see README > Setup).")

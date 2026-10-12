@@ -151,6 +151,26 @@ uv run delay-ai choose <event> <number>   # ids are printed by ingest
 uv run delay-ai outbox
 ```
 
+## Deploy (Railway)
+
+The `Dockerfile` builds the React UI and serves it with the API from one
+container. `delay-ai serve` reads `PORT` (Railway sets it) and `HOST` (the image
+sets `0.0.0.0`). No database or volume is needed: the server is stateless and
+each visitor's changes stay in their browser.
+
+1. In Railway: **New Project → Deploy from GitHub repo**, pick this repo and
+   `main`. Railway finds the `Dockerfile` and builds it.
+2. **Variables:** `ANTHROPIC_API_KEY` (a separate key with a spend limit),
+   `LLM_MODEL=anthropic/claude-sonnet-5`, and optionally `DEMO_PASSWORD` to put
+   the site behind one shared password (the browser asks for it).
+3. **Settings → Deploy → Healthcheck path:** `/api/health`.
+4. **Settings → Networking:** **Generate Domain** to test on `*.up.railway.app`,
+   then **Custom Domain** and add the CNAME record Railway shows at your DNS
+   provider. HTTPS is automatic.
+
+Every push to `main` redeploys. Check the image locally with
+`docker build -t delay-ai . && docker run -p 8000:8000 --env-file .env delay-ai`.
+
 ## Cached first run
 
 The app starts from `data/sample/seed_events.json`: the events of one full run
@@ -234,6 +254,12 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Choosing an option waits on the LLM for about a minute with no live progress.
 - Drafts are sent by hand: *Open in email app* pre-fills an email, and *Mark as
   sent* is the planner's word for it.
+
+**Hosting**
+- One container, no Railway config file (Railway's config-as-code is
+  deprecated); the health check path is set once in the dashboard.
+- Access control is a single shared password (`DEMO_PASSWORD`, browser basic
+  auth), not user accounts.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the
