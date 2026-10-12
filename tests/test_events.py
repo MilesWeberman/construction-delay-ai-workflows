@@ -29,3 +29,13 @@ def test_store_persists_to_file(tmp_path):
     path = tmp_path / "events.db"
     EventStore(path).append("Thing", {})
     assert len(EventStore(path).all()) == 1
+
+
+def test_retry_failed_puts_events_back_to_pending():
+    store = EventStore()
+    event = store.append("Thing", {})
+    store.fail(event.id, "boom")
+
+    assert store.retry_failed() == 1
+    assert store.get(event.id).status == "pending"
+    assert store.get(event.id).error is None

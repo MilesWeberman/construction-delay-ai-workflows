@@ -12,6 +12,15 @@ uv sync
 cp .env.example .env   # add your LLM API key
 ```
 
+## Run
+
+```bash
+uv run delay-ai ingest   # reads data/sample/emails into data/local/events.db
+```
+
+Prints the materials table built from the emails, the emails that need a person
+to review them, and any failed events. Failed events are retried on the next run.
+
 ## Develop
 
 ```bash
@@ -39,11 +48,16 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 **Email**
 - Read from a local `.eml` folder. Gmail and Outlook come later.
 - Plain-text body only; attachments are ignored.
+- A supplier is recognised by the domain of the sender's email address.
+- PO numbers must look like `PO-<digits>`.
+- Rules only read dates written in full with a year; the LLM resolves the rest.
+- A fixed confidence threshold (0.7) decides what goes to review.
+- If one item in an email fails a check, the whole email goes to review.
 
 **Events**
 - One SQLite file and a single process.
 - Event status (pending/done/failed) is updated in place, so the table isn't strictly append-only.
-- Failed events aren't retried automatically.
+- Failed events are retried only when the CLI runs again; there's no backoff.
 
 **Actions**
 - Emails and notifications are drafted to an outbox and never sent.

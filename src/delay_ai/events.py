@@ -9,6 +9,11 @@ from typing import Any, NamedTuple
 from pydantic import BaseModel
 
 EMAIL_RECEIVED = "EmailReceived"
+EMAIL_IGNORED = "EmailIgnored"
+MATERIAL_ORDERED = "MaterialOrdered"
+DELIVERY_DATE_CHANGED = "DeliveryDateChanged"
+DELIVERY_CONFIRMED = "DeliveryConfirmed"
+NEEDS_REVIEW = "NeedsReview"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -71,6 +76,14 @@ class EventStore:
             self.conn.execute(
                 "UPDATE events SET status = 'failed', error = ? WHERE id = ?", (error, event_id)
             )
+
+    def retry_failed(self) -> int:
+        """Put failed events back to pending. Returns how many."""
+        with self.conn:
+            cur = self.conn.execute(
+                "UPDATE events SET status = 'pending', error = NULL WHERE status = 'failed'"
+            )
+        return cur.rowcount
 
     def get(self, event_id: int) -> Event:
         row = self.conn.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
