@@ -1,6 +1,7 @@
 """Command line entry point: `uv run delay-ai <ingest|chat|link|choose|outbox>`."""
 
 import argparse
+import fcntl
 import sys
 from pathlib import Path
 
@@ -178,6 +179,12 @@ def main() -> None:
         sys.exit(f"{key} is not set for model {model()}. Add it to .env (see README > Setup).")
 
     args.db.parent.mkdir(parents=True, exist_ok=True)
+    # One run at a time: two runs would both process the same pending events.
+    lock = args.db.with_suffix(".lock").open("w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit("Another delay-ai run is using this database. Try again when it finishes.")
     store = EventStore(args.db)
     if args.command == "ingest":
         ingest(store, args.data, args.emails)
