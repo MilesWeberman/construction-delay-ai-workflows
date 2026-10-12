@@ -141,6 +141,10 @@ def choose(store: EventStore, data: Path, options_event: int, number: int) -> No
     event = store.get(options_event)
     if event.type != RECOVERY_OPTIONS_PROPOSED or not 1 <= number <= len(event.payload["options"]):
         sys.exit(f"No option {number} in event {options_event}")
+    if any(
+        e.type == OPTION_CHOSEN and e.payload["options_event"] == options_event for e in store.all()
+    ):
+        sys.exit(f"An option for event {options_event} has already been chosen")
     emit = choose_option(event, number)
     store.append(emit.type, emit.payload)
     print(f"Chose: {emit.payload['option']['title']}")

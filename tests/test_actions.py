@@ -76,7 +76,7 @@ def test_choosing_overtime_updates_plan_and_notifies_affected_people(workflow):
     assert steel["body"].startswith("Dear Dave Mitchell,")
     assert "A06 to be done 5 working days faster" in steel["body"]
     pm = messages["s.okafor@contractor.example"]["body"]
-    assert "Expected finish: 2027-08-26 (4 days recovered)" in pm
+    assert "Expected finish: 2027-08-26 (was 2027-09-01, 4 working days recovered)" in pm
 
 
 def test_choosing_phased_delivery_asks_supplier_and_leaves_plan_alone(workflow):
@@ -87,3 +87,21 @@ def test_choosing_phased_delivery_asks_supplier_and_leaves_plan_alone(workflow):
     ask = messages["orders@pennine-steel.example"]["body"]
     assert "Can PO-24110 (Structural steel frame) be delivered on 2027-01-05" in ask
     assert "d.mitchell@pennine-steel.example" not in messages  # nothing moves yet
+    pm = messages["s.okafor@contractor.example"]["body"]
+    assert "4 working days recovered), if the supplier confirms the earlier delivery" in pm
+
+
+def test_finish_is_recalculated_when_chosen_not_taken_from_the_proposal(workflow):
+    # Seen in the first real run: options scored before kitchens were linked
+    # claimed 9 days, but only 4 were left by the time one was chosen.
+    store, orchestrator, _ = workflow
+    (proposal,) = [e for e in store.all() if e.type == RECOVERY_OPTIONS_PROPOSED]
+    emit = choose_option(proposal, 1)
+    emit.payload["option"] |= {"recovered_days": 9, "new_finish": "2027-08-19"}  # stale
+    store.append(emit.type, emit.payload)
+    orchestrator.run()
+
+    (plan,) = [e for e in store.all() if e.type == ACTION_PLAN_DRAFTED]
+    pm = next(m for m in plan.payload["messages"] if m["role"] == "Project Manager")
+    assert "Expected finish: 2027-08-26 (was 2027-09-01, 4 working days recovered)" in pm["body"]
+    assert "2027-08-19" not in pm["body"]

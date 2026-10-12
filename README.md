@@ -161,6 +161,10 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
   30%), or ask for an earlier delivery.
 - A phased delivery is modelled as the whole PO arriving earlier.
 - Options are proposed only for delays that push out the finish.
+- Options are scored when proposed. If the plan changes before one is chosen
+  (e.g. a material gets linked), the list keeps the old scores; the action
+  plan recalculates the finish when an option is chosen.
+- One option can be chosen per delay.
 - The playbook (`src/delay_ai/playbook.md`) guides the LLM but isn't enforced
   by the CPM. A planner still checks options, e.g. for safety-critical links.
 
