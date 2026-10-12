@@ -6,6 +6,7 @@ export default function Header({ view }: { view: View }) {
   return (
     <header className="header">
       <div>
+        <span className="eyebrow">Construction projects /</span>
         <h1>{view.project.name}</h1>
         <p className="muted">{view.project.location}</p>
       </div>
