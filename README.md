@@ -5,6 +5,30 @@ Pilot: reduce project delays caused by **late material deliveries**.
 Delivery news (email, chat) → events → update affected schedule activities →
 re-plan the schedule to minimise project delay → human review in a UI.
 
+## Vision
+
+The pilot starts with one problem, late deliveries. The real value is wider: this
+tool becomes a **proactive, AI-enabled scheduling layer** that eventually replaces
+a contractor's legacy scheduling systems. It is one place to store, view,
+organise and optimise scheduling across every project.
+
+Today's tools record the plan. This layer acts on it. When something changes, it
+works out the effect on the programme, proposes ways to recover the time, and
+orchestrates the follow-up with the people involved. Every change is
+**optimised for reducing delay**.
+
+It starts by connecting to the systems already in place and pulling from them:
+
+- **Scheduling:** Primavera P6, Asta Powerproject, Microsoft Project
+- **Email:** Outlook / Microsoft 365, Gmail
+- **Procurement and ERP:** COINS, SAP, Viewpoint
+- **Project and document platforms:** Procore, Autodesk Construction Cloud, Aconex
+- **Spreadsheets:** Excel material and procurement trackers
+
+Over time it becomes the contractor's own internal application. Planners and
+site teams work in it directly, and the legacy tools become data sources rather
+than the system of record.
+
 ## Setup
 
 ```bash
