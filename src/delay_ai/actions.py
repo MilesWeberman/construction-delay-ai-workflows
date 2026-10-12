@@ -6,6 +6,7 @@ wording, and the facts are appended to every message unchanged. Nothing is sent.
 
 from collections.abc import Callable
 from datetime import date
+from typing import NamedTuple
 
 from pydantic import BaseModel
 
@@ -24,6 +25,11 @@ class Draft(BaseModel):
     body: str
 
 
+class Fact(NamedTuple):
+    exact: str  # appended to the message as written
+    gist: str  # the same fact without dates or numbers, for the LLM to write around
+
+
 def recipients(
     option: EvaluatedOption,
     contacts: list[Contact],
@@ -32,7 +38,7 @@ def recipients(
     before: Schedule,
     after: Schedule,
     expected: Schedule,
-) -> list[tuple[Contact, list[str]]]:
+) -> list[tuple[Contact, list[Fact]]]:
     """Everyone affected by the option, with the facts that matter to each of them.
 
     after is the plan once the option is applied; expected also assumes any
@@ -42,28 +48,38 @@ def recipients(
     edited = {e.activity_id for e in option.edits if e.activity_id}
     moved = {a.id for a in activities if before.start_of(a.id) != after.start_of(a.id)}
 
-    def activity_facts(ids: set[str]) -> list[str]:
+    def activity_facts(ids: set[str]) -> list[Fact]:
         facts = []
         for activity_id in sorted(ids & (edited | moved)):
+            label = f"{activity_id} {names[activity_id]}"
             old, new = before.start_of(activity_id), after.start_of(activity_id)
-            start = f"start {new}" if old == new else f"start moves {old} -> {new}"
-            facts.append(f"{activity_id} {names[activity_id]}: {start}")
+            if old == new:
+                facts.append(Fact(f"{label}: start {new}", f"{label}: start date unchanged"))
+            else:
+                direction = "earlier" if new < old else "later"
+                exact = f"{label}: start moves {old} -> {new}"
+                facts.append(Fact(exact, f"{label}: starts {direction}"))
         for e in option.edits:
             if e.type == "shorten" and e.activity_id in ids:
-                facts.append(f"{e.activity_id} to be done {e.days} working days faster")
+                exact = f"{e.activity_id} to be done {e.days} working days faster"
+                facts.append(Fact(exact, f"{e.activity_id} to be done faster"))
             if e.type == "remove_dependency" and e.activity_id in ids:
-                facts.append(f"{e.activity_id} no longer waits for {e.predecessor_id}")
+                text = f"{e.activity_id} no longer waits for {e.predecessor_id}"
+                facts.append(Fact(text, text))
         return facts
 
     result = []
     for contact in contacts:
         if not contact.activity_ids:  # project team: hears about everything
             recovered = before.duration_days - expected.duration_days
-            finish = f"Expected finish: {expected.finish_date} (was {before.finish_date}, "
-            finish += f"{recovered} working days recovered)"
+            exact = f"Expected finish: {expected.finish_date} (was {before.finish_date}, "
+            exact += f"{recovered} working days recovered)"
+            gist = "The expected finish " + ("improves" if recovered > 0 else "does not change")
             if any(e.type == "change_delivery" for e in option.edits):
-                finish += ", if the supplier confirms the earlier delivery"
-            facts = [f"Option chosen: {option.title}", finish, *activity_facts(set(names))]
+                exact += ", if the supplier confirms the earlier delivery"
+                gist += ", if the supplier confirms the earlier delivery"
+            chosen = f"Option chosen: {option.title}"
+            facts = [Fact(chosen, chosen), Fact(exact, gist), *activity_facts(set(names))]
             result.append((contact, facts))
         elif facts := activity_facts(set(contact.activity_ids)):
             result.append((contact, facts))
@@ -75,31 +91,34 @@ def recipients(
             supplier = Contact(
                 name=m.supplier, role="Supplier", company=m.supplier, email=m.supplier_email
             )
-            ask = (
+            exact = (
                 f"Can {e.po_number} ({m.description}) be delivered on {e.new_delivery} "
                 f"instead of {m.planned_delivery}?"
             )
-            result.append((supplier, [ask]))
+            gist = f"Ask whether {e.po_number} ({m.description}) can be delivered earlier"
+            result.append((supplier, [Fact(exact, gist)]))
     return result
 
 
 SYSTEM_PROMPT = """You write short, clear emails from a UK main contractor's project
 team to colleagues, subcontractors and suppliers about a programme change.
 Be direct and practical. Say what changes for the reader and what you need from
-them. Never write dates, durations or day counts: the key facts are appended
-below your text, and they are the only source of numbers. Don't mention earlier
+them. Never write dates, durations or day counts, and don't list the changes
+again: a "Key facts" list with the exact dates is appended below your text
+automatically. Don't mention earlier
 conversations or agreements; this message is the first the reader hears of it.
 Don't add a sign-off name; sign as "{project} project team"."""
 
 
 def draft_with_llm(
-    project: str, option: EvaluatedOption, contact: Contact, facts: list[str]
+    project: str, option: EvaluatedOption, contact: Contact, changes: list[str]
 ) -> Draft:
+    """changes have no dates or numbers, so the LLM can't repeat or alter them."""
     user = f"""To: {contact.name}, {contact.role}, {contact.company}
 Change: {option.title}
 Why: {option.rationale}
-Facts for this reader:
-""" + "\n".join(f"- {f}" for f in facts)
+What changes for this reader (exact dates are appended to your text automatically):
+""" + "\n".join(f"- {c}" for c in changes)
     return complete_structured(SYSTEM_PROMPT.format(project=project), user, Draft)
 
 
@@ -131,8 +150,9 @@ def make_action_handler(
         messages = []
         found = recipients(option, contacts, materials, after_acts, before, after, expected)
         for contact, facts in found:
-            text = draft(project, option, contact, facts)
-            body = text.body.rstrip() + "\n\nKey facts:\n" + "\n".join(f"- {f}" for f in facts)
+            text = draft(project, option, contact, [f.gist for f in facts])
+            key_facts = "\n".join(f"- {f.exact}" for f in facts)
+            body = text.body.rstrip() + "\n\nKey facts:\n" + key_facts
             messages.append(
                 {"to": contact.email, "name": contact.name, "role": contact.role,
                  "subject": text.subject, "body": body}

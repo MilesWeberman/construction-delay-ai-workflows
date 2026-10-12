@@ -105,3 +105,33 @@ def test_finish_is_recalculated_when_chosen_not_taken_from_the_proposal(workflow
     pm = next(m for m in plan.payload["messages"] if m["role"] == "Project Manager")
     assert "Expected finish: 2027-08-26 (was 2027-09-01, 4 working days recovered)" in pm["body"]
     assert "2027-08-19" not in pm["body"]
+
+
+def test_llm_only_sees_changes_without_dates(sample_dir):
+    import re
+
+    seen = []
+
+    def spy_draft(project, option, contact, changes):
+        seen.extend(changes)
+        return Draft(subject="s", body="b")
+
+    activities = load_schedule(sample_dir / "schedule.csv")
+    store = EventStore()
+    ingest_emails(FolderEmailSource(sample_dir / "emails"), store)
+    impact = make_impact_handler(store, activities, START)
+    handlers = base_handlers(store, activities, compute_schedule(activities, START)) | {
+        DELIVERY_DATE_CHANGED: impact,
+        MATERIAL_LINKED: impact,
+        DELAY_ASSESSED: make_planner_handler(store, activities, START, fake_propose),
+        OPTION_CHOSEN: make_action_handler(
+            store, activities, START, load_contacts(sample_dir / "contacts.csv"), "P", spy_draft
+        ),
+    }
+    orchestrator = Orchestrator(store, handlers)
+    orchestrator.run()
+    choose(store, orchestrator, "Overtime on decking")
+
+    assert "A06 to be done faster" in seen
+    assert "A07 Roof structure: starts earlier" in seen
+    assert not [c for c in seen if re.search(r"\d{4}-\d{2}-\d{2}|\d+ working days", c)]
