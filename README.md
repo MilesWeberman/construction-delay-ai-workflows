@@ -31,19 +31,55 @@ than the system of record.
 
 ## Setup
 
+### 1. Get an Anthropic API key
+
+1. Sign in to the [Claude Console](https://console.anthropic.com), using the
+   company organisation if there is one so usage is billed to the project.
+2. Under **Billing**, add credits or a payment method. API calls fail without them.
+3. Under **API keys**, choose **Create key** (e.g. `delay-ai-pilot`) and copy it.
+   It starts with `sk-ant-` and is shown only once.
+
+### 2. Install and configure
+
 ```bash
 uv sync
-cp .env.example .env   # add your LLM API key
+cp .env.example .env
 ```
+
+Edit `.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+LLM_MODEL=anthropic/claude-sonnet-5
+```
+
+`.env` is gitignored and loaded automatically by the CLI. Never commit it or
+paste the key into chat or tickets.
+
+To use another provider, set its key and any
+[litellm model string](https://docs.litellm.ai/docs/providers), e.g.
+`OPENAI_API_KEY=...` with `LLM_MODEL=openai/<model>`.
+
+Gmail and Outlook credentials are not needed yet; they come with the email
+connectors.
 
 ## Run
 
 ```bash
-uv run delay-ai ingest   # reads data/sample/emails into data/local/events.db
+rm -f data/local/events.db   # optional: start from a clean event log
+uv run delay-ai ingest       # reads data/sample/emails into data/local/events.db
 ```
 
 Prints the materials table built from the emails, the emails that need a person
-to review them, and any failed events. Failed events are retried on the next run.
+to review them, and any failed events. Failed events (e.g. a missing API key)
+are retried on the next run.
+
+With the sample inbox you should see:
+
+- **14 materials**, with the delays applied: steel `PO-24110` on 2027-01-12,
+  lifts `PO-24160` on 2027-03-24, kitchens `PO-24170` on 2027-06-23
+- **Needs review:** the Clearview windows email (possible delay, no firm date)
+- **Failed:** nothing
 
 ## Develop
 
