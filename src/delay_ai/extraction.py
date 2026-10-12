@@ -1,4 +1,4 @@
-"""Read a supplier email: deterministic rules first, the LLM for what rules can't get."""
+"""Read a supplier email or team chat message: rules first, the LLM for the rest."""
 
 import calendar
 import re
@@ -63,8 +63,10 @@ class EmailExtraction(BaseModel):
     confidence: float = Field(description="0 to 1: how sure you are about the whole extraction")
 
 
-SYSTEM_PROMPT = """You read emails from construction material suppliers to a UK contractor.
-Classify the email and extract every order or delivery it mentions.
+SYSTEM_PROMPT = """You read messages about construction material deliveries for a UK
+contractor: emails from suppliers, or chat messages from the contractor's own team
+passing on news (e.g. "Pennine rang, steel is now 12 Jan").
+Classify the message and extract every order or delivery it mentions.
 
 Rules:
 - Use only what the email says. Never invent PO numbers or dates.
@@ -83,13 +85,13 @@ def extract_with_llm(email: Email, facts: RuleFacts, known: list[Material]) -> E
         f"- {m.po_number}: {m.description}, planned delivery {m.planned_delivery}" for m in known
     )
     user = f"""Sent: {email.sent_at:%A %d %B %Y}
-From: {email.sender}
+From: {email.sender} (via {email.channel})
 Subject: {email.subject}
 
 {email.body}
 
 ---
-Known orders from this sender:
+Known orders{" from this sender" if email.channel == "email" else ""}:
 {orders or "(none)"}
 
 Found by pattern matching:

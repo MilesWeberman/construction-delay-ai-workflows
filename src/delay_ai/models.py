@@ -1,6 +1,7 @@
 """Core domain models: the project, its schedule, materials, contacts and emails."""
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -45,10 +46,11 @@ class Contact(BaseModel):
 
 
 class Email(BaseModel):
-    """An inbound email, independent of where it came from (folder, Gmail, Outlook)."""
+    """An inbound message: an email (folder, Gmail, Outlook) or a chat message from the team."""
 
     message_id: str
-    sender: str  # email address only
+    sender: str  # email address, or the chat author's name
     subject: str
     sent_at: datetime
     body: str
+    channel: Literal["email", "chat"] = "email"

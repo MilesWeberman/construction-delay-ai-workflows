@@ -96,6 +96,13 @@ automatically when the rules and the LLM agree; otherwise a planner confirms it:
 uv run delay-ai link PO-24150 A13
 ```
 
+News that doesn't arrive by email, e.g. a phone call, can be typed in. It
+goes through the same rules, LLM and checks as an email:
+
+```bash
+uv run delay-ai chat "Pennine rang: steel PO-24110 now arriving 19/01/2027" --author "Priya Shah"
+```
+
 When a delay pushes out the finish, the planner proposes recovery options. Pick
 one, then read the drafted messages:
 
@@ -140,6 +147,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Rules only read dates written in full with a year; the LLM resolves the rest.
 - A fixed confidence threshold (0.7) decides what goes to review.
 - If one item in an email fails a check, the whole email goes to review.
+- Chat messages are trusted as coming from the team: they can update any
+  supplier's order, but can't create new orders.
 
 **Events**
 - One SQLite file and a single process.
