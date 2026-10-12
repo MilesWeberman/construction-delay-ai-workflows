@@ -115,6 +115,16 @@ uv run delay-ai choose <event> <number>   # ids are printed by ingest
 uv run delay-ai outbox
 ```
 
+## Cached first run
+
+The app starts from `data/sample/seed_events.json`: the events of one full run
+of the sample inbox, so visitors don't wait for (or pay for) about 30 LLM calls.
+Regenerate it after changing prompts, knowledge files or sample data:
+
+```bash
+uv run delay-ai seed
+```
+
 ## Develop
 
 ```bash
@@ -170,6 +180,10 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
   second run).
 - Event status (pending/done/failed) is updated in place, so the table isn't strictly append-only.
 - Failed events are retried only when the CLI runs again; there's no backoff.
+
+**Demo app**
+- The first run is cached in `seed_events.json`; it isn't refreshed
+  automatically when prompts or sample data change.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the

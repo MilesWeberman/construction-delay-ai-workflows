@@ -1,0 +1,995 @@
+[
+ {
+  "id": 1,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-northgate-001@northgate-supplies.example",
+   "sender": "orders@northgate-supplies.example",
+   "subject": "Order acknowledgements - Riverside Court, Leeds",
+   "sent_at": "2026-08-24T10:03:00+01:00",
+   "body": "Hello Sarah,\n\nThank you for your orders. Please find acknowledgements below. All deliveries\nto Riverside Court site, Kirkstall Road, Leeds.\n\nPO-24101  Precast concrete piles 300x300      120 nr    deliver 11/11/2026\nPO-24103  Rebar and mesh (pile caps/beams)     42 t     deliver 02/12/2026\nPO-24120  Roof membrane + insulation boards   650 m2    deliver 17/03/2027\nPO-24150  Plasterboard and metal studs       4200 m2    deliver 19/05/2027\nPO-24190  Block paving and landscaping         1 lot    deliver 31/03/2027\nPO-24171  Sanitaryware (bathrooms)             60 sets  deliver 16/06/2027\nPO-24180  LVT floor finishes                 3100 m2    deliver 14/07/2027\n\nPlease give 48 hours notice for any changes to delivery dates.\n\nNorthgate Building Supplies",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.190099Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-northgate-001@northgate-supplies.example"
+ },
+ {
+  "id": 2,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-pennine-001@pennine-steel.example",
+   "sender": "orders@pennine-steel.example",
+   "subject": "Order confirmation PO-24110 / PO-24111 Riverside Court",
+   "sent_at": "2026-08-27T15:20:00+01:00",
+   "body": "Hi Sarah,\n\nConfirming we've booked the following against your orders:\n\n- PO-24110: structural steel frame (columns and beams), approx 310 t.\n  Delivery to site Tuesday 29th December 2026, ready for erection in the new\n  year.\n- PO-24111: composite metal decking for floors L1-L5, 2,600 m2. Delivery\n  27th January 2027.\n\nRegards,\nMark Bentley\nPennine Steel Fabrications Ltd",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.190738Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-pennine-001@pennine-steel.example"
+ },
+ {
+  "id": 3,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-clearview-001@clearview-glazing.example",
+   "sender": "g.lloyd@clearview-glazing.example",
+   "subject": "Riverside Court facade package - order confirmed",
+   "sent_at": "2026-09-01T09:45:00+01:00",
+   "body": "Sarah,\n\nGood to speak earlier. As discussed, we've confirmed both parts of the facade\npackage:\n\nPO-24130 - 140 no. unitised curtain wall panels\nPO-24131 - 96 no. aluminium double glazed windows\n\nBoth are due on site 3 March 2027. Our install team will follow the frame.\n\nGareth Lloyd\nClearview Glazing Systems",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.191125Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-clearview-001@clearview-glazing.example"
+ },
+ {
+  "id": 4,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-airevalley-001@airevalley-me.example",
+   "sender": "procurement@airevalley-me.example",
+   "subject": "PO-24140 accepted",
+   "sent_at": "2026-09-03T11:12:00+01:00",
+   "body": "Tom,\n\nPO-24140 accepted - first fix pipework, cable and containment for all floors.\nWe'll deliver the lot on 14/04/2027 so the lads can start 1st fix once you're\nwatertight.\n\nEmma Clarke\nAire Valley M&E Ltd",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.191442Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-airevalley-001@airevalley-me.example"
+ },
+ {
+  "id": 5,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-apex-001@apex-lifts.example",
+   "sender": "deliveries@apex-lifts.example",
+   "subject": "Order PO-24160 - 2 no. passenger lifts",
+   "sent_at": "2026-09-08T14:00:00+01:00",
+   "body": "Dear Sarah,\n\nWe acknowledge receipt of purchase order PO-24160 for 2 no. 13-person\npassenger lifts for Riverside Court. Equipment delivery is planned for\n3 March 2027.\n\nKind regards,\nApex Lifts UK Ltd - Logistics",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.191745Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-apex-001@apex-lifts.example"
+ },
+ {
+  "id": 6,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "order-calder-001@calder-kitchens.example",
+   "sender": "dispatch@calder-kitchens.example",
+   "subject": "Your kitchen order",
+   "sent_at": "2026-09-10T16:30:00+01:00",
+   "body": "Hi Priya,\n\nThanks for the order (your ref PO-24170). 48 kitchen sets for the apartments,\nwe'll bring them all in one drop on 16 June next year.\n\nCheers,\nJen\nCalder Kitchens",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.192091Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:order-calder-001@calder-kitchens.example"
+ },
+ {
+  "id": 7,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "news-0915@northgate-supplies.example",
+   "sender": "news@northgate-supplies.example",
+   "subject": "Autumn offers on power tools",
+   "sent_at": "2026-09-15T07:00:00+01:00",
+   "body": "Save up to 20% on power tools this autumn. Visit your local branch.",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.192463Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:news-0915@northgate-supplies.example"
+ },
+ {
+  "id": 8,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "update-003@pennine-steel.example",
+   "sender": "orders@pennine-steel.example",
+   "subject": "RE: PO-24110 Riverside Court - steel delivery",
+   "sent_at": "2026-10-12T09:14:00+01:00",
+   "body": "Hi Sarah,\n\nUnfortunately our mill has pushed back the rolling of the UC sections for your\njob. We can no longer make the 29th December delivery for PO-24110.\n\nEarliest we can now get the columns and beams to site is Tuesday 12th January\n2027. We'll confirm the exact load sequence nearer the time.\n\nApologies for the knock-on, give me a call if you want to talk options.\n\nRegards,\nMark Bentley\nPennine Steel Fabrications Ltd",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.192782Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:update-003@pennine-steel.example"
+ },
+ {
+  "id": 9,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "update-002@apex-lifts.example",
+   "sender": "deliveries@apex-lifts.example",
+   "subject": "Riverside Court lift equipment - revised delivery",
+   "sent_at": "2026-10-12T11:02:00+01:00",
+   "body": "Dear Sarah,\n\nRe: your order PO-24160 (2 no. passenger lifts).\n\nDue to a component shortage at our factory, delivery of the lift equipment\nwill move from 3 March 2027 to 24 March 2027.\n\nKind regards,\nApex Lifts UK Ltd - Logistics",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.193087Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:update-002@apex-lifts.example"
+ },
+ {
+  "id": 10,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "update-001@calder-kitchens.example",
+   "sender": "dispatch@calder-kitchens.example",
+   "subject": "Kitchens for Riverside Court",
+   "sent_at": "2026-10-12T14:37:00+01:00",
+   "body": "Hi Priya,\n\nHeads up - our haulier has lost a vehicle slot that week so the kitchen units\nwon't make the 16/06. We're looking at the following Wednesday (23rd June)\ninstead. Same drop, all 48 sets in one go.\n\nCheers,\nJen\nCalder Kitchens",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.193456Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:update-001@calder-kitchens.example"
+ },
+ {
+  "id": 11,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "update-005@clearview-glazing.example",
+   "sender": "g.lloyd@clearview-glazing.example",
+   "subject": "Window production",
+   "sent_at": "2026-10-13T08:50:00+01:00",
+   "body": "Morning Sarah,\n\nJust flagging that we've had a problem with one of our glass suppliers. There\nis a chance the windows for Riverside Court slip a bit. I'll know more and\nconfirm by Friday.\n\nGareth",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.193819Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:update-005@clearview-glazing.example"
+ },
+ {
+  "id": 12,
+  "type": "EmailReceived",
+  "payload": {
+   "message_id": "update-004@northgate-supplies.example",
+   "sender": "orders@northgate-supplies.example",
+   "subject": "Order confirmation PO-24150",
+   "sent_at": "2026-10-13T10:15:00+01:00",
+   "body": "Hello,\n\nThis is to confirm your order PO-24150 (plasterboard and metal studs) is\nscheduled for delivery on 19/05/2027 as planned.\n\nNorthgate Building Supplies",
+   "channel": "email"
+  },
+  "created_at": "2026-10-12T22:18:50.194135Z",
+  "caused_by": null,
+  "status": "done",
+  "error": null,
+  "dedupe_key": "email:update-004@northgate-supplies.example"
+ },
+ {
+  "id": 13,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24101",
+    "description": "Precast concrete piles 300x300",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 120.0,
+    "unit": "nr",
+    "planned_delivery": "2026-11-11",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.370469Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 14,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24103",
+    "description": "Rebar and mesh (pile caps/beams)",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 42.0,
+    "unit": "t",
+    "planned_delivery": "2026-12-02",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.370975Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 15,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24120",
+    "description": "Roof membrane + insulation boards",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 650.0,
+    "unit": "m2",
+    "planned_delivery": "2027-03-17",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.370995Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 16,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24150",
+    "description": "Plasterboard and metal studs",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 4200.0,
+    "unit": "m2",
+    "planned_delivery": "2027-05-19",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.371007Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 17,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24190",
+    "description": "Block paving and landscaping",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 1.0,
+    "unit": "lot",
+    "planned_delivery": "2027-03-31",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.371017Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 18,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24171",
+    "description": "Sanitaryware (bathrooms)",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 60.0,
+    "unit": "sets",
+    "planned_delivery": "2027-06-16",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.371028Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 19,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24180",
+    "description": "LVT floor finishes",
+    "supplier": "Northgate Building Supplies",
+    "supplier_email": "orders@northgate-supplies.example",
+    "quantity": 3100.0,
+    "unit": "m2",
+    "planned_delivery": "2027-07-14",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-northgate-001@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:18:54.371038Z",
+  "caused_by": 1,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 20,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24110",
+    "description": "structural steel frame (columns and beams)",
+    "supplier": "Pennine Steel Fabrications Ltd",
+    "supplier_email": "orders@pennine-steel.example",
+    "quantity": 310.0,
+    "unit": "t",
+    "planned_delivery": "2026-12-29",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-pennine-001@pennine-steel.example"
+  },
+  "created_at": "2026-10-12T22:18:56.483216Z",
+  "caused_by": 2,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 21,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24111",
+    "description": "composite metal decking for floors L1-L5",
+    "supplier": "Pennine Steel Fabrications Ltd",
+    "supplier_email": "orders@pennine-steel.example",
+    "quantity": 2600.0,
+    "unit": "m2",
+    "planned_delivery": "2027-01-27",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-pennine-001@pennine-steel.example"
+  },
+  "created_at": "2026-10-12T22:18:56.484107Z",
+  "caused_by": 2,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 22,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24130",
+    "description": "unitised curtain wall panels",
+    "supplier": "Clearview Glazing Systems",
+    "supplier_email": "g.lloyd@clearview-glazing.example",
+    "quantity": 140.0,
+    "unit": "no.",
+    "planned_delivery": "2027-03-03",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-clearview-001@clearview-glazing.example"
+  },
+  "created_at": "2026-10-12T22:18:58.429692Z",
+  "caused_by": 3,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 23,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24131",
+    "description": "aluminium double glazed windows",
+    "supplier": "Clearview Glazing Systems",
+    "supplier_email": "g.lloyd@clearview-glazing.example",
+    "quantity": 96.0,
+    "unit": "no.",
+    "planned_delivery": "2027-03-03",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-clearview-001@clearview-glazing.example"
+  },
+  "created_at": "2026-10-12T22:18:58.431159Z",
+  "caused_by": 3,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 24,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24140",
+    "description": "First fix pipework, cable and containment for all floors",
+    "supplier": "Aire Valley M&E Ltd",
+    "supplier_email": "procurement@airevalley-me.example",
+    "quantity": null,
+    "unit": null,
+    "planned_delivery": "2027-04-14",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-airevalley-001@airevalley-me.example"
+  },
+  "created_at": "2026-10-12T22:19:00.271367Z",
+  "caused_by": 4,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 25,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24160",
+    "description": "13-person passenger lifts",
+    "supplier": "Apex Lifts UK Ltd",
+    "supplier_email": "deliveries@apex-lifts.example",
+    "quantity": 2.0,
+    "unit": "no.",
+    "planned_delivery": "2027-03-03",
+    "activity_id": null
+   },
+   "date_source": "written_in_email",
+   "source_email": "order-apex-001@apex-lifts.example"
+  },
+  "created_at": "2026-10-12T22:19:02.011690Z",
+  "caused_by": 5,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 26,
+  "type": "MaterialOrdered",
+  "payload": {
+   "material": {
+    "po_number": "PO-24170",
+    "description": "kitchen sets for the apartments",
+    "supplier": "Calder Kitchens",
+    "supplier_email": "dispatch@calder-kitchens.example",
+    "quantity": 48.0,
+    "unit": "sets",
+    "planned_delivery": "2027-06-16",
+    "activity_id": null
+   },
+   "date_source": "inferred_by_llm",
+   "source_email": "order-calder-001@calder-kitchens.example"
+  },
+  "created_at": "2026-10-12T22:19:04.060099Z",
+  "caused_by": 6,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 27,
+  "type": "EmailIgnored",
+  "payload": {
+   "source_email": "news-0915@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:19:05.643640Z",
+  "caused_by": 7,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 28,
+  "type": "DeliveryDateChanged",
+  "payload": {
+   "po_number": "PO-24110",
+   "matched_by": "po_in_email",
+   "source_email": "update-003@pennine-steel.example",
+   "old_delivery": "2026-12-29",
+   "new_delivery": "2027-01-12",
+   "reason": "Mill pushed back rolling of the UC sections",
+   "date_source": "written_in_email"
+  },
+  "created_at": "2026-10-12T22:19:07.541046Z",
+  "caused_by": 8,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 29,
+  "type": "DeliveryDateChanged",
+  "payload": {
+   "po_number": "PO-24160",
+   "matched_by": "po_in_email",
+   "source_email": "update-002@apex-lifts.example",
+   "old_delivery": "2027-03-03",
+   "new_delivery": "2027-03-24",
+   "reason": "Component shortage at factory",
+   "date_source": "written_in_email"
+  },
+  "created_at": "2026-10-12T22:19:09.241222Z",
+  "caused_by": 9,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 30,
+  "type": "DeliveryDateChanged",
+  "payload": {
+   "po_number": "PO-24170",
+   "matched_by": "llm",
+   "source_email": "update-001@calder-kitchens.example",
+   "old_delivery": "2027-06-16",
+   "new_delivery": "2027-06-23",
+   "reason": "Haulier lost a vehicle slot for that week",
+   "date_source": "inferred_by_llm"
+  },
+  "created_at": "2026-10-12T22:19:12.629689Z",
+  "caused_by": 10,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 31,
+  "type": "NeedsReview",
+  "payload": {
+   "problems": [
+    "Low confidence (60%)",
+    "Possible delay with no firm date",
+    "No delivery date for PO-24131"
+   ],
+   "extraction": {
+    "kind": "possible_delay",
+    "supplier": "Clearview Glazing",
+    "items": [
+     {
+      "po_number": "PO-24131",
+      "description": "aluminium double glazed windows",
+      "quantity": null,
+      "unit": null,
+      "delivery_date": null
+     }
+    ],
+    "reason": "Problem with a glass supplier may delay windows for Riverside Court",
+    "confidence": 0.6
+   },
+   "source_email": "update-005@clearview-glazing.example"
+  },
+  "created_at": "2026-10-12T22:19:15.425850Z",
+  "caused_by": 11,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 32,
+  "type": "DeliveryConfirmed",
+  "payload": {
+   "po_number": "PO-24150",
+   "matched_by": "po_in_email",
+   "source_email": "update-004@northgate-supplies.example"
+  },
+  "created_at": "2026-10-12T22:19:17.189115Z",
+  "caused_by": 12,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 33,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24101",
+   "activity_id": "A02",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Precast concrete piles are required directly for the Piling activity, which starts shortly after the delivery date."
+  },
+  "created_at": "2026-10-12T22:19:18.815253Z",
+  "caused_by": 13,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 34,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24103",
+   "activity_id": "A03",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Rebar and mesh delivered 2026-12-02 directly supports pile caps and ground beams construction starting 2026-12-07."
+  },
+  "created_at": "2026-10-12T22:19:20.410701Z",
+  "caused_by": 14,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 35,
+  "type": "LinkSuggested",
+  "payload": {
+   "po_number": "PO-24120",
+   "by_rules": null,
+   "by_llm": "A08",
+   "llm_confidence": 0.92,
+   "rationale": "Roof membrane and insulation boards are required for the roof covering and waterproofing activity starting shortly after the delivery date."
+  },
+  "created_at": "2026-10-12T22:19:21.872568Z",
+  "caused_by": 15,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 36,
+  "type": "LinkSuggested",
+  "payload": {
+   "po_number": "PO-24150",
+   "by_rules": "A06",
+   "by_llm": "A13",
+   "llm_confidence": 0.95,
+   "rationale": "Plasterboard and metal studs are directly required for drylining and partitions, which starts shortly after the planned delivery date."
+  },
+  "created_at": "2026-10-12T22:19:23.437313Z",
+  "caused_by": 16,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 37,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24190",
+   "activity_id": "A18",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Block paving and landscaping materials are directly required for the External works and landscaping activity starting shortly after delivery."
+  },
+  "created_at": "2026-10-12T22:19:25.004230Z",
+  "caused_by": 17,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 38,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24171",
+   "activity_id": "A16",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Sanitaryware delivery on 2027-06-16 directly precedes and supplies the kitchen and bathroom fit-out activity starting 2027-06-21."
+  },
+  "created_at": "2026-10-12T22:19:26.580757Z",
+  "caused_by": 18,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 39,
+  "type": "LinkSuggested",
+  "payload": {
+   "po_number": "PO-24180",
+   "by_rules": null,
+   "by_llm": "A17",
+   "llm_confidence": 0.85,
+   "rationale": "LVT floor finishes are installed during the decoration and flooring activity, with delivery shortly before its start date."
+  },
+  "created_at": "2026-10-12T22:19:28.266002Z",
+  "caused_by": 19,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 40,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24110",
+   "activity_id": "A05",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "The structural steel frame delivery on 2026-12-29 directly precedes and supplies the steel frame erection activity A05 starting 2027-01-04."
+  },
+  "created_at": "2026-10-12T22:19:29.763029Z",
+  "caused_by": 20,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 41,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24111",
+   "activity_id": "A06",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Composite metal decking is directly required for activity A06, Metal decking and upper floor slabs L1-L5, which starts shortly after the planned delivery."
+  },
+  "created_at": "2026-10-12T22:19:31.338311Z",
+  "caused_by": 21,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 42,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24130",
+   "activity_id": "A09",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Unitised curtain wall panels are delivered just before the curtain walling and cladding activity begins installation."
+  },
+  "created_at": "2026-10-12T22:19:33.042338Z",
+  "caused_by": 22,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 43,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24131",
+   "activity_id": "A10",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "Aluminium double glazed windows are directly required for window installation, which starts shortly after the planned delivery date."
+  },
+  "created_at": "2026-10-12T22:19:34.759007Z",
+  "caused_by": 23,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 44,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24140",
+   "activity_id": "A12",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "First fix pipework, cable and containment is directly required for the MEP first fix activity starting shortly after delivery."
+  },
+  "created_at": "2026-10-12T22:19:36.174318Z",
+  "caused_by": 24,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 45,
+  "type": "MaterialLinked",
+  "payload": {
+   "po_number": "PO-24160",
+   "activity_id": "A14",
+   "linked_by": "rules_and_llm_agree",
+   "rationale": "The 13-person passenger lifts are delivered just before Lift installation (A14) starts, matching the typical lead-in for lift equipment to site."
+  },
+  "created_at": "2026-10-12T22:19:38.120471Z",
+  "caused_by": 25,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 46,
+  "type": "LinkSuggested",
+  "payload": {
+   "po_number": "PO-24170",
+   "by_rules": null,
+   "by_llm": "A16",
+   "llm_confidence": 0.95,
+   "rationale": "Kitchen sets must be on site shortly before kitchen and bathroom fit-out begins on 2027-06-21."
+  },
+  "created_at": "2026-10-12T22:19:39.715749Z",
+  "caused_by": 26,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 47,
+  "type": "DelayAssessed",
+  "payload": {
+   "change_event": 28,
+   "po_number": "PO-24110",
+   "activity_id": "A05",
+   "old_delivery": "2026-12-29",
+   "new_delivery": "2027-01-12",
+   "float_before_days": 0,
+   "activity_slip_days": 7,
+   "project_slip_days": 7,
+   "old_finish": "2027-08-23",
+   "new_finish": "2027-09-01",
+   "delayed_activities": [
+    "A05",
+    "A06",
+    "A07",
+    "A08",
+    "A09",
+    "A10",
+    "A11",
+    "A12",
+    "A13",
+    "A14",
+    "A15",
+    "A16",
+    "A17",
+    "A18",
+    "A19",
+    "A20"
+   ]
+  },
+  "created_at": "2026-10-12T22:19:39.722552Z",
+  "caused_by": 28,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 48,
+  "type": "DelayAssessed",
+  "payload": {
+   "change_event": 29,
+   "po_number": "PO-24160",
+   "activity_id": "A14",
+   "old_delivery": "2027-03-03",
+   "new_delivery": "2027-03-24",
+   "float_before_days": 85,
+   "activity_slip_days": 6,
+   "project_slip_days": 0,
+   "old_finish": "2027-09-01",
+   "new_finish": "2027-09-01",
+   "delayed_activities": [
+    "A14"
+   ]
+  },
+  "created_at": "2026-10-12T22:19:39.726323Z",
+  "caused_by": 29,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ },
+ {
+  "id": 49,
+  "type": "RecoveryOptionsProposed",
+  "payload": {
+   "assessment_event": 47,
+   "po_number": "PO-24110",
+   "options": [
+    {
+     "title": "Fast-track the envelope by overlapping curtain walling with the steel/decking sequence",
+     "edits": [
+      {
+       "type": "remove_dependency",
+       "activity_id": "A09",
+       "predecessor_id": "A06",
+       "days": null,
+       "po_number": null,
+       "new_delivery": null
+      }
+     ],
+     "rationale": "A09 Curtain walling and cladding is critical and currently waits for all of A06 Metal decking and upper floor slabs to finish. The playbook allows facade installation to follow the frame floor by floor, so curtain walling can start once the lower floors are structurally ready rather than waiting for the top floor slab. This overlaps two currently sequential critical activities and shortens the chain into watertight.",
+     "risks": "Needs the structural engineer and temporary works coordinator to confirm each floor is loaded and braced before cladding starts on it, and edge protection must be in place for curtain wall installers working above live decking operations - a genuine CDM 2015 interface risk if not sequenced carefully floor by floor. Requires tight coordination between the steel erector and Clearview Glazing Systems' installation gangs sharing the same crane and access.",
+     "cost": "Mainly coordination and possibly additional temporary edge protection/mast climbers to allow both trades on site together; limited direct cost, say \u00a35-10k for extra temporary works, assuming no extra crane shift is needed.",
+     "recovered_days": 9,
+     "new_finish": "2027-08-19"
+    },
+    {
+     "title": "Crash decking and MEP first fix with extra gangs and shifts",
+     "edits": [
+      {
+       "type": "shorten",
+       "activity_id": "A06",
+       "predecessor_id": null,
+       "days": 5,
+       "po_number": null,
+       "new_delivery": null
+      },
+      {
+       "type": "shorten",
+       "activity_id": "A12",
+       "predecessor_id": null,
+       "days": 5,
+       "po_number": null,
+       "new_delivery": null
+      }
+     ],
+     "rationale": "Both A06 Metal decking and upper floor slabs and A12 MEP first fix are labour-driven critical activities with no material constraint once decking and first-fix materials are on site, and both sit on the critical path. Adding a second gang or running longer shifts on each can claw back days without touching the delivery or the sequence, within the playbook's 30% crashing guidance.",
+     "risks": "Diminishing returns and quality risk from rushed decking welds/bolting and from first-fix services not being properly coordinated before drylining; requires overtime or weekend working consent from the local authority and confirmation that the site can safely host extra operatives at height and in confined service risers. Should be checked against float on A07/A08/A10 before committing, as pulling A06 forward could shift what is currently non-critical onto the critical path.",
+     "cost": "Roughly two extra gangs across the two packages plus weekend/evening premiums, in the order of \u00a320-30k, with the usual productivity loss from overtime working.",
+     "recovered_days": 9,
+     "new_finish": "2027-08-19"
+    },
+    {
+     "title": "Expedite the steel delivery with Pennine Steel (supply-side recovery)",
+     "edits": [
+      {
+       "type": "change_delivery",
+       "activity_id": null,
+       "predecessor_id": null,
+       "days": null,
+       "po_number": "PO-24110",
+       "new_delivery": "2027-01-05"
+      }
+     ],
+     "rationale": "A05 Structural steel frame erection is the first critical activity hit by the late PO-24110 delivery, and every downstream critical activity (A06 decking, A09 curtain walling, A11 watertight, A12-A13-A16-A17, A19, A20) is pushed by the same amount. Pulling the steel delivery back towards the original 2026-12-29 date attacks the problem at its source rather than compressing work later in the programme, and avoids disturbing the planned sequence.",
+     "risks": "Pennine Steel's mill rolling and fabrication slots are long-lead and hard to move at short notice; galvanising capacity may not flex. If they can only offer a partial pull-forward (e.g. first grid lines), full recovery won't be achieved. Any informal promise should be confirmed in writing before relying on it in the programme, and keep the delay correspondence for a possible claim against the supplier.",
+     "cost": "Likely an expediting fee or priority charge from Pennine Steel, typically a few thousand pounds; no extra site labour cost if the date simply moves back.",
+     "recovered_days": 5,
+     "new_finish": "2027-08-25"
+    }
+   ],
+   "rejected": []
+  },
+  "created_at": "2026-10-12T22:20:14.066068Z",
+  "caused_by": 47,
+  "status": "done",
+  "error": null,
+  "dedupe_key": null
+ }
+]

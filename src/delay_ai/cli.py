@@ -2,7 +2,9 @@
 
 import argparse
 import fcntl
+import json
 import sys
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -171,6 +173,17 @@ def outbox(store: EventStore) -> None:
         print()
 
 
+def seed(data: Path, emails: Path, out: Path) -> None:
+    """Run the sample inbox once on a fresh database and save the events, so the app
+    can start from them without any LLM calls."""
+    with tempfile.TemporaryDirectory() as folder:
+        store = EventStore(Path(folder) / "seed.db")
+        ingest(store, data, emails)
+        events = store.export()
+    out.write_text(json.dumps(events, indent=1) + "\n")
+    print(f"\nSaved {len(events)} events to {out}")
+
+
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="delay-ai")
@@ -191,9 +204,12 @@ def main() -> None:
     choose_cmd.add_argument("options_event", type=int)
     choose_cmd.add_argument("number", type=int)
     commands.add_parser("outbox", help="Show drafted messages (nothing is sent)")
+    seed_cmd = commands.add_parser("seed", help="Cache the sample run for the app")
+    seed_cmd.add_argument("--emails", type=Path, default=Path("data/sample/emails"))
+    seed_cmd.add_argument("--out", type=Path, default=Path("data/sample/seed_events.json"))
     args = parser.parse_args()
 
-    if args.command in {"ingest", "chat", "link", "choose"} and (key := missing_api_key()):
+    if args.command in {"ingest", "chat", "link", "choose", "seed"} and (key := missing_api_key()):
         sys.exit(f"{key} is not set for model {model()}. Add it to .env (see README > Setup).")
 
     args.db.parent.mkdir(parents=True, exist_ok=True)
@@ -214,3 +230,5 @@ def main() -> None:
         choose(store, args.data, args.options_event, args.number)
     elif args.command == "outbox":
         outbox(store)
+    elif args.command == "seed":
+        seed(args.data, args.emails, args.out)
