@@ -5,21 +5,81 @@ Pilot: reduce project delays caused by **late material deliveries**.
 Delivery news (email, chat) → events → update affected schedule activities →
 re-plan the schedule to minimise project delay → human review in a UI.
 
+## Vision
+
+The pilot starts with one problem, late deliveries. The real value is wider: this
+tool becomes a **proactive, AI-enabled scheduling layer** that eventually replaces
+a contractor's legacy scheduling systems. It is one place to store, view,
+organise and optimise scheduling across every project.
+
+Today's tools record the plan. This layer acts on it. When something changes, it
+works out the effect on the programme, proposes ways to recover the time, and
+orchestrates the follow-up with the people involved. Every change is
+**optimised for reducing delay**.
+
+It starts by connecting to the systems already in place and pulling from them:
+
+- **Scheduling:** Primavera P6, Asta Powerproject, Microsoft Project
+- **Email:** Outlook / Microsoft 365, Gmail
+- **Procurement and ERP:** COINS, SAP, Viewpoint
+- **Project and document platforms:** Procore, Autodesk Construction Cloud, Aconex
+- **Spreadsheets:** Excel material and procurement trackers
+
+Over time it becomes the contractor's own internal application. Planners and
+site teams work in it directly, and the legacy tools become data sources rather
+than the system of record.
+
 ## Setup
+
+### 1. Get an Anthropic API key
+
+1. Sign in to the [Claude Console](https://console.anthropic.com), using the
+   company organisation if there is one so usage is billed to the project.
+2. Under **Billing**, add credits or a payment method. API calls fail without them.
+3. Under **API keys**, choose **Create key** (e.g. `delay-ai-pilot`) and copy it.
+   It starts with `sk-ant-` and is shown only once.
+
+### 2. Install and configure
 
 ```bash
 uv sync
-cp .env.example .env   # add your LLM API key
+cp .env.example .env
 ```
+
+Edit `.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+LLM_MODEL=anthropic/claude-sonnet-5
+```
+
+`.env` is gitignored and loaded automatically by the CLI. Never commit it or
+paste the key into chat or tickets.
+
+To use another provider, set its key and any
+[litellm model string](https://docs.litellm.ai/docs/providers), e.g.
+`OPENAI_API_KEY=...` with `LLM_MODEL=openai/<model>`.
+
+Gmail and Outlook credentials are not needed yet; they come with the email
+connectors.
 
 ## Run
 
 ```bash
-uv run delay-ai ingest   # reads data/sample/emails into data/local/events.db
+rm -f data/local/events.db   # optional: start from a clean event log
+uv run delay-ai ingest       # reads data/sample/emails into data/local/events.db
 ```
 
 Prints the materials table built from the emails, the emails that need a person
-to review them, and any failed events. Failed events are retried on the next run.
+to review them, and any failed events. Failed events (e.g. a missing API key)
+are retried on the next run.
+
+With the sample inbox you should see:
+
+- **14 materials**, with the delays applied: steel `PO-24110` on 2027-01-12,
+  lifts `PO-24160` on 2027-03-24, kitchens `PO-24170` on 2027-06-23
+- **Needs review:** the Clearview windows email (possible delay, no firm date)
+- **Failed:** nothing
 
 ## Develop
 
