@@ -1,0 +1,32 @@
+[project]
+name = "delay-ai"
+version = "0.1.0"
+description = "AI workflows to reduce construction project delays caused by late material deliveries"
+readme = "README.md"
+authors = [
+    { name = "MilesWeberman", email = "webermanmiles@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+delay-ai = "delay_ai:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
