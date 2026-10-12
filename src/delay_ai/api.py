@@ -9,6 +9,7 @@ the visitor's events to store again.
 
 import hashlib
 import json
+from datetime import date
 from functools import cache
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -23,6 +24,7 @@ from delay_ai.events import OPTION_CHOSEN, RECOVERY_OPTIONS_PROPOSED, EventStore
 from delay_ai.linking import planner_link
 from delay_ai.llm import missing_api_key
 from delay_ai.orchestrator import Orchestrator, ingest_chat
+from delay_ai.review import dismiss_review, enter_delivery_date, mark_sent
 from delay_ai.view import build_view
 from delay_ai.workflow import handlers
 
@@ -57,10 +59,31 @@ class Chat(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+class SetDelivery(BaseModel):
+    kind: Literal["set_delivery"]
+    email_id: str
+    po_number: str
+    date: date
+
+
+class DismissReview(BaseModel):
+    kind: Literal["dismiss_review"]
+    email_id: str
+
+
+class MarkSent(BaseModel):
+    kind: Literal["mark_sent"]
+    message_id: str
+
+
+Action = Link | Choose | Chat | SetDelivery | DismissReview | MarkSent
+NEEDS_AI = (Choose, Chat)
+
+
 class Request(BaseModel):
     seed: str | None = None  # the seed the visitor's events were made on
     events: list[dict[str, Any]] = []
-    action: Annotated[Link | Choose | Chat, Field(discriminator="kind")] | None = None
+    action: Annotated[Action, Field(discriminator="kind")] | None = None
 
 
 def replay(request: Request) -> tuple[EventStore, str, int]:
@@ -75,8 +98,8 @@ def replay(request: Request) -> tuple[EventStore, str, int]:
     return store, seed_hash, last_seed_id
 
 
-def run(store: EventStore, action: Link | Choose | Chat) -> None:
-    if not isinstance(action, Link) and (key := missing_api_key()):
+def run(store: EventStore, action: Action) -> None:
+    if isinstance(action, NEEDS_AI) and (key := missing_api_key()):
         raise HTTPException(503, f"{key} is not set on the server, so the AI can't run")
     if isinstance(action, Link):
         for po_number, activity_id in action.links:
@@ -92,8 +115,24 @@ def run(store: EventStore, action: Link | Choose | Chat) -> None:
             raise HTTPException(400, "That option can't be chosen")
         emit = choose_option(proposal, action.number)
         store.append(emit.type, emit.payload)
-    else:
+    elif isinstance(action, Chat):
         ingest_chat(action.text, "You", store)
+    elif isinstance(action, SetDelivery):
+        try:
+            emits = enter_delivery_date(
+                store.all(), action.email_id, action.po_number, action.date, date.today()
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        for emit in emits:
+            store.append(emit.type, emit.payload)
+    else:
+        emit = (
+            dismiss_review(action.email_id)
+            if isinstance(action, DismissReview)
+            else mark_sent(action.message_id)
+        )
+        store.append(emit.type, emit.payload)
     Orchestrator(store, handlers(store, DATA)).run()
 
 

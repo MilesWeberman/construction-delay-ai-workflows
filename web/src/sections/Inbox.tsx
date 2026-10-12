@@ -1,21 +1,28 @@
 import { Fragment, useState } from 'react'
+import type { Act } from '../App'
 import type { Email } from '../api'
 import { shortDate } from '../format'
 
-function tone(result: string) {
-  if (result.startsWith('Needs')) return 'warn'
-  if (result.startsWith('Delivery moved')) return 'amber'
-  if (result.startsWith('Delivery confirmed')) return 'ok'
-  return 'plain'
+const TONE: Record<Email['status'], string> = {
+  review: 'warn',
+  reviewed: 'plain',
+  moved: 'amber',
+  confirmed: 'ok',
+  orders: 'plain',
+  ignored: 'plain',
+  pending: 'plain',
 }
 
-export default function Inbox({ emails }: { emails: Email[] }) {
-  const [open, setOpen] = useState<string | null>(null)
+type Props = { emails: Email[]; act: Act; busy: boolean }
+
+export default function Inbox({ emails, act, busy }: Props) {
+  const firstReview = emails.find((e) => e.status === 'review')?.id ?? null
+  const [open, setOpen] = useState<string | null>(firstReview)
   return (
     <div className="card flush">
       <table>
         <thead>
-          <tr><th>Date</th><th>From</th><th>Subject</th><th>Read by AI as</th></tr>
+          <tr><th>Date</th><th>From</th><th>Subject</th><th>What the AI did</th></tr>
         </thead>
         <tbody>
           {emails.map((e) => (
@@ -24,14 +31,14 @@ export default function Inbox({ emails }: { emails: Email[] }) {
                 <td className="nowrap muted">{shortDate(e.date)}</td>
                 <td className="nowrap">{e.from.split('@')[1]}</td>
                 <td>{e.subject}</td>
-                <td>{e.result && <span className={`tag ${tone(e.result)}`}>{e.result}</span>}</td>
+                <td><span className={`tag ${TONE[e.status]}`}>{e.label}</span></td>
               </tr>
               {open === e.id && (
                 <tr className="detail">
                   <td colSpan={4}>
                     <div className="muted small">From {e.from}</div>
-                    {e.problems.length > 0 && <div className="note">{e.problems.join('; ')}</div>}
                     <pre>{e.body}</pre>
+                    {e.review && <ReviewActions email={e} act={act} busy={busy} />}
                   </td>
                 </tr>
               )}
@@ -39,6 +46,34 @@ export default function Inbox({ emails }: { emails: Email[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function ReviewActions({ email, act, busy }: { email: Email; act: Act; busy: boolean }) {
+  const review = email.review!
+  const [po, setPo] = useState(review.suggested_po ?? review.candidates[0]?.po ?? '')
+  const [date, setDate] = useState('')
+  return (
+    <div className="review">
+      <strong>The AI couldn't record this one</strong>
+      <p className="muted">{review.problems.join('. ')}.</p>
+      <p>If you know the new delivery date, enter it. Otherwise dismiss it and wait for the supplier.</p>
+      <div className="review-actions">
+        <select value={po} onChange={(e) => setPo(e.target.value)}>
+          {review.candidates.map((c) => (
+            <option key={c.po} value={c.po}>{c.material} (now {shortDate(c.delivery)})</option>
+          ))}
+        </select>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button className="primary" disabled={busy || !po || !date}
+          onClick={() => act({ kind: 'set_delivery', email_id: email.id, po_number: po, date }, 'Updating the schedule')}>
+          Save new date
+        </button>
+        <button disabled={busy} onClick={() => act({ kind: 'dismiss_review', email_id: email.id }, 'Saving')}>
+          Dismiss
+        </button>
+      </div>
     </div>
   )
 }

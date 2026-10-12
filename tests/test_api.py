@@ -23,7 +23,13 @@ def test_first_visit_shows_the_seeded_state():
     assert len(alert["recovery"]["options"]) == 3
     assert len(v["links"]) == 4
     assert len(v["inbox"]) == 12
-    assert v["inbox"][0]["result"] == "Delivery confirmed"
+    assert v["inbox"][0]["label"] == "Delivery confirmed on time"
+    assert v["counts"] == {"review": 1, "drafts": 0}
+    statuses = {m["po"]: (m["status"], m["label"]) for m in v["materials"]}
+    assert statuses["PO-24110"] == ("late_slips", "Late: completion +7 days")
+    assert statuses["PO-24160"] == ("late_absorbed", "Late: no effect on completion")
+    assert statuses["PO-24170"] == ("late_unchecked", "Late: not checked yet")
+    assert statuses["PO-24150"][0] == "confirmed"
     assert {e["kind"] for e in v["calendar"]} == {"activity", "delivery", "delivery_moved"}
 
 
@@ -65,4 +71,44 @@ def test_choosing_twice_is_refused(monkeypatch):
             "action": {"kind": "choose", "options_event": options_event, "number": 2},
         },
     )
+    assert response.status_code == 400
+
+
+def windows_email(v):
+    return next(e for e in v["inbox"] if e["status"] == "review")
+
+
+def test_planner_enters_the_date_for_a_flagged_email():
+    first = view()
+    email = windows_email(first["view"])
+    assert email["review"]["suggested_po"] == "PO-24131"
+    after = view(
+        seed=first["seed"],
+        action={"kind": "set_delivery", "email_id": email["id"], "po_number": "PO-24131",
+                "date": "2027-03-10"},
+    )  # fmt: skip
+    v = after["view"]
+    assert v["counts"]["review"] == 0
+    windows = next(m for m in v["materials"] if m["po"] == "PO-24131")
+    assert windows["delivery"] == "2027-03-10"
+    assert windows["was"] == "2027-03-03"
+    assert windows["status"] == "late_absorbed"  # windows had 15 days of float
+
+
+def test_dismissing_a_review():
+    first = view()
+    email = windows_email(first["view"])
+    after = view(seed=first["seed"], action={"kind": "dismiss_review", "email_id": email["id"]})
+    assert after["view"]["counts"]["review"] == 0
+    assert next(e for e in after["view"]["inbox"] if e["id"] == email["id"])["label"] == "Reviewed"
+
+
+def test_past_date_is_refused():
+    first = view()
+    email = windows_email(first["view"])
+    response = client.post("/api/view", json={
+        "seed": first["seed"],
+        "action": {"kind": "set_delivery", "email_id": email["id"], "po_number": "PO-24131",
+                   "date": "2020-01-01"},
+    })  # fmt: skip
     assert response.status_code == 400

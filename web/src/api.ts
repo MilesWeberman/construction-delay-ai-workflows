@@ -29,14 +29,21 @@ export type CalendarItem = {
   kind: 'activity' | 'delivery' | 'delivery_moved'
 }
 
+export type Review = {
+  problems: string[]
+  suggested_po: string | null
+  candidates: { po: string; material: string; delivery: string }[]
+}
+
 export type Email = {
   id: string
   date: string
   from: string
   subject: string
   body: string
-  result: string
-  problems: string[]
+  status: 'review' | 'reviewed' | 'moved' | 'confirmed' | 'orders' | 'ignored' | 'pending'
+  label: string
+  review: Review | null
 }
 
 export type Material = {
@@ -44,11 +51,22 @@ export type Material = {
   material: string
   supplier: string
   delivery: string
-  status: 'ordered' | 'confirmed' | 'moved'
+  was: string | null
+  status: 'on_track' | 'confirmed' | 'unmatched' | 'late_slips' | 'late_recovered' | 'late_absorbed' | 'late_unchecked'
+  label: string
   needed_for: string | null
 }
 
-export type Message = { to: string; name: string; role: string; subject: string; body: string; plan: string }
+export type Message = {
+  id: string
+  to: string
+  name: string
+  role: string
+  subject: string
+  body: string
+  plan: string
+  sent: boolean
+}
 
 export type View = {
   project: { name: string; location: string }
@@ -63,6 +81,7 @@ export type View = {
   materials: Material[]
   outbox: Message[]
   chat: { role: 'user' | 'assistant'; text: string }[]
+  counts: { review: number; drafts: number }
   ai_ready: boolean
 }
 
@@ -70,6 +89,9 @@ export type Action =
   | { kind: 'link'; links: [string, string][] }
   | { kind: 'choose'; options_event: number; number: number }
   | { kind: 'chat'; text: string }
+  | { kind: 'set_delivery'; email_id: string; po_number: string; date: string }
+  | { kind: 'dismiss_review'; email_id: string }
+  | { kind: 'mark_sent'; message_id: string }
 
 type Saved = { seed: string | null; events: unknown[] }
 

@@ -76,11 +76,19 @@ uv run delay-ai serve        # http://localhost:8000
 For UI development, run `uv run delay-ai serve` and `cd web && npm run dev`
 (http://localhost:5173, which proxies `/api` to the server).
 
-One page, like a scheduling app with AI built in: the completion date, AI
-alerts (a late delivery with recovery options to choose), the schedule as a
-calendar with the deliveries the AI matched to tasks below it, to confirm, the
-inbox and materials as tables (click an email to read it), and the outbox once an option
-is chosen. The assistant is on the right.
+A scheduling app with AI built in, in three tabs:
+
+- **Schedule**: the completion date; an *Action needed* card when a late
+  delivery or site news pushes completion out, with recovery options to choose;
+  the calendar (hover a task for its full name and dates); the deliveries the
+  AI matched to tasks, to confirm; and materials, each with a plain status and
+  its next step (e.g. *Late: completion +7 days → See recovery options*).
+- **Inbox**: what the AI did with each email. Emails it couldn't record open
+  with actions: enter the delivery date yourself, or dismiss.
+- **Outbox**: messages drafted when an option is chosen, each *Draft, not sent*
+  until you open it in your email app and mark it as sent.
+
+The assistant is on the right.
 
 The server keeps no state. Every visitor starts from the cached first run (see
 below); what they do is saved as events in their own browser's localStorage and
@@ -224,6 +232,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - The server trusts the events the browser sends back; fine for a demo, not for
   real users (that needs accounts and server-side storage).
 - Choosing an option waits on the LLM for about a minute with no live progress.
+- Drafts are sent by hand: *Open in email app* pre-fills an email, and *Mark as
+  sent* is the planner's word for it.
 
 **Knowledge**
 - No RAG: every knowledge file goes into every prompt whole. Fine while the
