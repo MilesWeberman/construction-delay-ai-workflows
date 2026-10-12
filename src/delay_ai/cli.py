@@ -15,6 +15,7 @@ from delay_ai.events import (
     MATERIAL_LINKED,
     MATERIAL_ORDERED,
     NEEDS_REVIEW,
+    RECOVERY_OPTIONS_PROPOSED,
     EventStore,
 )
 from delay_ai.extraction import extract_with_llm
@@ -24,6 +25,7 @@ from delay_ai.linking import make_link_handler, planner_link, suggest_with_llm
 from delay_ai.loaders import load_project, load_schedule
 from delay_ai.materials import build_materials, pending_link_suggestions
 from delay_ai.orchestrator import Orchestrator, ingest_emails
+from delay_ai.planner import make_planner_handler, propose_with_llm
 
 
 def handlers(store: EventStore, data: Path) -> dict:
@@ -36,6 +38,7 @@ def handlers(store: EventStore, data: Path) -> dict:
         MATERIAL_ORDERED: make_link_handler(activities, schedule, suggest_with_llm),
         DELIVERY_DATE_CHANGED: impact,
         MATERIAL_LINKED: impact,
+        DELAY_ASSESSED: make_planner_handler(store, activities, start_date, propose_with_llm),
     }
 
 
@@ -69,6 +72,19 @@ def report(store: EventStore) -> None:
             )
             moved = f"{p['old_delivery']} -> {p['new_delivery']}"
             print(f"  {p['po_number']} ({p['activity_id']}): {moved}, {effect}")
+    print("\nRecovery options:")
+    for e in events:
+        if e.type == RECOVERY_OPTIONS_PROPOSED:
+            print(f"  For {e.payload['po_number']} (event {e.id}):")
+            for n, o in enumerate(e.payload["options"], start=1):
+                print(
+                    f"    {n}. {o['title']}: recovers {o['recovered_days']} days, "
+                    f"finish {o['new_finish']}. Cost: {o['cost']}"
+                )
+                print(f"       {o['rationale']}")
+                print(f"       Risks: {o['risks']}")
+            for r in e.payload["rejected"]:
+                print(f"    Rejected: {r['title']} ({'; '.join(r['problems'])})")
     print("\nNeeds review:")
     for e in events:
         if e.type == NEEDS_REVIEW:

@@ -84,6 +84,8 @@ With the sample inbox you should see:
 - **Delays:** steel moves the finish +7 working days (to 2027-09-01); the lifts
   and kitchen delays are absorbed (kitchens only because steel already pushed
   fit-out back). Kitchens shows once its link is confirmed, if it needed confirming
+- **Recovery options:** up to 3 options for the steel delay, each scored by the
+  CPM against the whole current plan
 - **Needs review:** the Clearview windows email (possible delay, no firm date)
 - **Failed:** nothing
 
@@ -135,6 +137,14 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - One SQLite file and a single process.
 - Event status (pending/done/failed) is updated in place, so the table isn't strictly append-only.
 - Failed events are retried only when the CLI runs again; there's no backoff.
+
+**Recovery options**
+- Three kinds of edit only: drop a dependency, shorten an activity (by up to
+  30%), or ask for an earlier delivery.
+- A phased delivery is modelled as the whole PO arriving earlier.
+- Options are proposed only for delays that push out the finish.
+- The playbook (`src/delay_ai/playbook.md`) guides the LLM but isn't enforced
+  by the CPM. A planner still checks options, e.g. for safety-critical links.
 
 **Actions**
 - Emails and notifications are drafted to an outbox and never sent.

@@ -17,6 +17,7 @@ NEEDS_REVIEW = "NeedsReview"
 LINK_SUGGESTED = "LinkSuggested"
 MATERIAL_LINKED = "MaterialLinked"
 DELAY_ASSESSED = "DelayAssessed"
+RECOVERY_OPTIONS_PROPOSED = "RecoveryOptionsProposed"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
