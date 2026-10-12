@@ -45,6 +45,7 @@ class Event(BaseModel):
     caused_by: int | None
     status: str
     error: str | None
+    dedupe_key: str | None = None
 
 
 class Emit(NamedTuple):
@@ -92,6 +93,22 @@ class EventStore:
                 "UPDATE events SET status = 'pending', error = NULL WHERE status = 'failed'"
             )
         return cur.rowcount
+
+    def export(self, after_id: int = 0) -> list[dict[str, Any]]:
+        """Events as JSON-ready dicts, e.g. to cache a run or save a visitor's changes."""
+        return [e.model_dump(mode="json") for e in self.all() if e.id > after_id]
+
+    def load(self, events: list[dict[str, Any]]) -> None:
+        """Add exported events, keeping their ids, times and statuses."""
+        with self.conn:
+            for e in events:
+                self.conn.execute(
+                    "INSERT INTO events"
+                    " (id, type, payload, created_at, caused_by, status, error, dedupe_key)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (e["id"], e["type"], json.dumps(e["payload"]), e["created_at"],
+                     e["caused_by"], e["status"], e["error"], e.get("dedupe_key")),
+                )  # fmt: skip
 
     def get(self, event_id: int) -> Event:
         row = self.conn.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()

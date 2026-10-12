@@ -39,3 +39,23 @@ def test_retry_failed_puts_events_back_to_pending():
     assert store.retry_failed() == 1
     assert store.get(event.id).status == "pending"
     assert store.get(event.id).error is None
+
+
+def test_export_and_load_round_trip():
+    store = EventStore()
+    first = store.append("A", {"x": 1}, dedupe_key="email:1")
+    store.complete(first.id, [Emit("B", {"y": 2})])
+
+    copy = EventStore()
+    copy.load(store.export())
+
+    assert copy.all() == store.all()
+    assert copy.append("A", {}, dedupe_key="email:1") is None  # dedupe survives
+    assert copy.append("C", {}).id > 2  # new ids continue after the loaded ones
+
+
+def test_export_after_id_returns_only_newer_events():
+    store = EventStore()
+    store.append("A", {})
+    store.append("B", {})
+    assert [e["type"] for e in store.export(after_id=1)] == ["B"]
