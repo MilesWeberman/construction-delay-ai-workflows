@@ -1,0 +1,21 @@
+activity_id,name,trade,duration_days,predecessors
+A01,Site set-up and hoarding,Preliminaries,10,
+A02,Piling,Groundworks,15,A01
+A03,Pile caps and ground beams,Groundworks,12,A02
+A04,Ground floor slab,Groundworks,8,A03
+A05,Structural steel frame erection,Steel,20,A04
+A06,Metal decking and upper floor slabs L1-L5,Steel,25,A05
+A07,Roof structure,Steel,10,A06
+A08,Roof covering and waterproofing,Roofing,10,A07
+A09,Curtain walling and cladding,Envelope,30,A06
+A10,Window installation,Envelope,15,A06
+A11,Building watertight,Milestone,0,A08;A09;A10
+A12,MEP first fix,MEP,25,A11
+A13,Drylining and partitions,Interiors,20,A12
+A14,Lift installation,Lifts,25,A06
+A15,MEP second fix,MEP,15,A13
+A16,Kitchen and bathroom fit-out,Interiors,20,A13
+A17,Decoration and flooring,Interiors,15,A15;A16
+A18,External works and landscaping,Externals,20,A08
+A19,Testing and commissioning,MEP,10,A17;A14
+A20,Practical completion,Milestone,0,A19;A18
