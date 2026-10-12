@@ -96,11 +96,15 @@ automatically when the rules and the LLM agree; otherwise a planner confirms it:
 uv run delay-ai link PO-24150 A13
 ```
 
-News that doesn't arrive by email, e.g. a phone call, can be typed in. It
-goes through the same rules, LLM and checks as an email:
+The chat takes three kinds of message. Delivery news (e.g. from a phone call)
+goes through the same rules, LLM and checks as an email. A suggested schedule
+change is turned into edits, scored by the CPM, and can be chosen like a
+recovery option. Questions are answered from the knowledge files and the plan:
 
 ```bash
 uv run delay-ai chat "Pennine rang: steel PO-24110 now arriving 19/01/2027" --author "Priya Shah"
+uv run delay-ai chat "Can glazing start as soon as decking is under way?"
+uv run delay-ai chat "Why is the kitchen delay not affecting the finish?"
 ```
 
 When a delay pushes out the finish, the planner proposes recovery options. Pick
@@ -159,6 +163,7 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - If one item in an email fails a check, the whole email goes to review.
 - Chat messages are trusted as coming from the team: they can update any
   supplier's order, but can't create new orders.
+- The chat has no memory of earlier messages; each message stands alone.
 
 **Events**
 - One SQLite file, and one CLI run at a time per database (a lock file refuses a

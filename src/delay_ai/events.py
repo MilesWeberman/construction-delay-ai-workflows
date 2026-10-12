@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 EMAIL_RECEIVED = "EmailReceived"
 CHAT_MESSAGE_RECEIVED = "ChatMessageReceived"
+CHAT_REPLIED = "ChatReplied"
 EMAIL_IGNORED = "EmailIgnored"
 MATERIAL_ORDERED = "MaterialOrdered"
 DELIVERY_DATE_CHANGED = "DeliveryDateChanged"

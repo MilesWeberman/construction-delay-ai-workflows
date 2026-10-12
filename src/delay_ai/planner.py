@@ -83,6 +83,33 @@ to {impact.new_delivery}. The finish moved from {impact.old_finish} to {impact.n
 Proposer = Callable[[DeliveryImpact, Schedule, list[Activity], list[Material]], RecoveryPlan]
 
 
+def evaluate_options(
+    proposed: list[RecoveryOption],
+    activities: list[Activity],
+    materials: list[Material],
+    start_date: date,
+    today: date,
+) -> tuple[list[EvaluatedOption], list[dict]]:
+    """Validate and score options with the CPM, best first. Invalid ones come back with reasons."""
+    current = schedule_with_materials(activities, materials, start_date)
+    options, rejected = [], []
+    for option in proposed:
+        new_acts, new_mats, problems = apply_edits(option.edits, activities, materials, today)
+        if problems:
+            rejected.append({"title": option.title, "problems": problems})
+            continue
+        result = schedule_with_materials(new_acts, new_mats, start_date)
+        options.append(
+            EvaluatedOption(
+                **option.model_dump(),
+                recovered_days=current.duration_days - result.duration_days,
+                new_finish=result.finish_date,
+            )
+        )
+    options.sort(key=lambda o: o.recovered_days, reverse=True)
+    return options, rejected
+
+
 def make_planner_handler(
     store: EventStore, base: list[Activity], start_date: date, propose: Proposer
 ) -> Callable[[Event], list[Emit]]:
@@ -95,24 +122,9 @@ def make_planner_handler(
         activities = current_activities(base, events)
         current = schedule_with_materials(activities, materials, start_date)
         plan = propose(impact, current, activities, materials)
-
-        options, rejected = [], []
-        for option in plan.options:
-            new_acts, new_mats, problems = apply_edits(
-                option.edits, activities, materials, event.created_at.date()
-            )
-            if problems:
-                rejected.append({"title": option.title, "problems": problems})
-                continue
-            result = schedule_with_materials(new_acts, new_mats, start_date)
-            options.append(
-                EvaluatedOption(
-                    **option.model_dump(),
-                    recovered_days=current.duration_days - result.duration_days,
-                    new_finish=result.finish_date,
-                )
-            )
-        options.sort(key=lambda o: o.recovered_days, reverse=True)
+        options, rejected = evaluate_options(
+            plan.options, activities, materials, start_date, event.created_at.date()
+        )
         payload = {
             "assessment_event": event.id,
             "po_number": impact.po_number,
