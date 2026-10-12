@@ -1,6 +1,6 @@
-"""Core domain models: the project, its schedule, materials and contacts."""
+"""Core domain models: the project, its schedule, materials, contacts and emails."""
 
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -42,3 +42,13 @@ class Contact(BaseModel):
     company: str
     email: str
     activity_ids: list[str] = []  # empty means "notify for every change"
+
+
+class Email(BaseModel):
+    """An inbound email, independent of where it came from (folder, Gmail, Outlook)."""
+
+    message_id: str
+    sender: str  # email address only
+    subject: str
+    sent_at: datetime
+    body: str
