@@ -14,6 +14,8 @@ MATERIAL_ORDERED = "MaterialOrdered"
 DELIVERY_DATE_CHANGED = "DeliveryDateChanged"
 DELIVERY_CONFIRMED = "DeliveryConfirmed"
 NEEDS_REVIEW = "NeedsReview"
+LINK_SUGGESTED = "LinkSuggested"
+MATERIAL_LINKED = "MaterialLinked"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (

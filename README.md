@@ -78,8 +78,18 @@ With the sample inbox you should see:
 
 - **14 materials**, with the delays applied: steel `PO-24110` on 2027-01-12,
   lifts `PO-24160` on 2027-03-24, kitchens `PO-24170` on 2027-06-23
+- **Links to confirm:** materials where the rules and the LLM chose different
+  activities, or the rules found none (e.g. plasterboard: the rules say A06,
+  the LLM should say A13)
 - **Needs review:** the Clearview windows email (possible delay, no firm date)
 - **Failed:** nothing
+
+Each material is linked to the activity that needs it. The link is made
+automatically when the rules and the LLM agree; otherwise a planner confirms it:
+
+```bash
+uv run delay-ai link PO-24150 A13
+```
 
 ## Develop
 
@@ -104,6 +114,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 **Materials**
 - One material per PO.
 - Built from supplier emails; there is no materials spreadsheet.
+- Each material is linked to one activity only.
+- Linking rules only compare words in the material and activity names.
 
 **Email**
 - Read from a local `.eml` folder. Gmail and Outlook come later.
