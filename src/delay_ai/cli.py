@@ -26,6 +26,7 @@ from delay_ai.extraction import extract_with_llm
 from delay_ai.impact import make_impact_handler
 from delay_ai.ingestion import make_email_handler
 from delay_ai.linking import make_link_handler, planner_link, suggest_with_llm
+from delay_ai.llm import missing_api_key, model
 from delay_ai.loaders import load_contacts, load_project, load_schedule
 from delay_ai.materials import build_materials, pending_link_suggestions
 from delay_ai.orchestrator import Orchestrator, ingest_chat, ingest_emails
@@ -172,6 +173,9 @@ def main() -> None:
     choose_cmd.add_argument("number", type=int)
     commands.add_parser("outbox", help="Show drafted messages (nothing is sent)")
     args = parser.parse_args()
+
+    if args.command in {"ingest", "chat", "link", "choose"} and (key := missing_api_key()):
+        sys.exit(f"{key} is not set for model {model()}. Add it to .env (see README > Setup).")
 
     args.db.parent.mkdir(parents=True, exist_ok=True)
     store = EventStore(args.db)
