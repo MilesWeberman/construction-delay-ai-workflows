@@ -151,7 +151,8 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
   supplier's order, but can't create new orders.
 
 **Events**
-- One SQLite file and a single process.
+- One SQLite file, and one CLI run at a time per database (a lock file refuses a
+  second run).
 - Event status (pending/done/failed) is updated in place, so the table isn't strictly append-only.
 - Failed events are retried only when the CLI runs again; there's no backoff.
 

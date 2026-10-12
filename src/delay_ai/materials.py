@@ -32,6 +32,7 @@ def build_materials(events: list[Event]) -> list[Material]:
 
 
 def pending_link_suggestions(events: list[Event]) -> list[Event]:
-    """Suggestions for materials a planner still has to link."""
+    """The latest suggestion for each material a planner still has to link."""
     unlinked = {m.po_number for m in build_materials(events) if m.activity_id is None}
-    return [e for e in events if e.type == LINK_SUGGESTED and e.payload["po_number"] in unlinked]
+    latest = {e.payload["po_number"]: e for e in events if e.type == LINK_SUGGESTED}
+    return [e for po_number, e in latest.items() if po_number in unlinked]

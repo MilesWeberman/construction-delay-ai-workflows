@@ -59,23 +59,26 @@ def decide(
     problems = []
     if extraction.confidence < MIN_CONFIDENCE:
         problems.append(f"Low confidence ({extraction.confidence:.0%})")
-    if extraction.kind == "possible_delay":
-        problems.append("Possible delay with no firm date")
     if not extraction.items:
         problems.append("No orders or deliveries found")
+    # The LLM's label is a hint; whether an item carries a date is what counts.
+    if extraction.kind == "possible_delay" and not any(i.delivery_date for i in extraction.items):
+        problems.append("Possible delay with no firm date")
 
-    is_order = extraction.kind == "order_confirmation"
-    if is_order and email.channel == "chat":
-        problems.append("New orders must come from the supplier's email, not chat")
     emits = []
     for item in extraction.items:
         po_number, matched_by = match_po(item, facts, from_sender)
-        item_problems = check_item(item, po_number, is_order, email, facts, materials)
+        # A known PO is an update, even in a re-sent order acknowledgement.
+        is_new_order = extraction.kind == "order_confirmation" and po_number not in materials
+        if is_new_order and email.channel == "chat":
+            problems.append("New orders must come from the supplier's email, not chat")
+            continue
+        item_problems = check_item(item, po_number, is_new_order, email, facts, materials)
         problems += item_problems
         if item_problems:
             continue
         date_source = "written_in_email" if item.delivery_date in facts.dates else "inferred_by_llm"
-        if is_order:
+        if is_new_order:
             material = Material(
                 po_number=po_number,
                 description=item.description,
@@ -121,7 +124,7 @@ def match_po(
 def check_item(
     item: ExtractedItem,
     po_number: str | None,
-    is_order: bool,
+    is_new_order: bool,
     email: Email,
     facts: RuleFacts,
     materials: dict[str, Material],
@@ -129,14 +132,12 @@ def check_item(
     if po_number is None:
         return [f"Could not tell which order '{item.description}' refers to"]
     problems = []
-    if is_order and po_number not in facts.po_numbers:
+    if is_new_order and po_number not in facts.po_numbers:
         problems.append(f"{po_number} is not written in the email")
-    if is_order and po_number in materials:
-        problems.append(f"{po_number} is already recorded")
-    if not is_order and po_number not in materials:
+    if not is_new_order and po_number not in materials:
         problems.append(f"{po_number} is not a known order")
     elif (
-        not is_order
+        not is_new_order
         and email.channel == "email"
         and domain(materials[po_number].supplier_email) != domain(email.sender)
     ):

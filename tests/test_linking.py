@@ -85,3 +85,12 @@ def test_planner_link_updates_materials_and_clears_suggestion():
     (linked,) = build_materials(store.all())
     assert linked.activity_id == "A13"
     assert pending_link_suggestions(store.all()) == []
+
+
+def test_only_latest_suggestion_per_material_is_pending():
+    store = EventStore()
+    store.append(MATERIAL_ORDERED, {"material": material("Plasterboard").model_dump(mode="json")})
+    store.append(LINK_SUGGESTED, {"po_number": "PO-1", "by_rules": None, "by_llm": "A12"})
+    store.append(LINK_SUGGESTED, {"po_number": "PO-1", "by_rules": None, "by_llm": "A13"})
+    (pending,) = pending_link_suggestions(store.all())
+    assert pending.payload["by_llm"] == "A13"

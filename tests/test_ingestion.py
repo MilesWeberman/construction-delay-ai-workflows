@@ -117,3 +117,28 @@ def test_low_confidence_goes_to_review():
         "delivery_change", [item("PO-24110", "Steel", date(2027, 1, 12))], confidence=0.4
     )
     assert "Low confidence (40%)" in problems(e, result, {"PO-24110": STEEL})
+
+
+# Fixes from the first real LLM run.
+
+
+def emitted(e, result, materials):
+    from_sender = [m for m in materials.values() if m.supplier_email == e.sender]
+    return decide(e, apply_rules(e), result, materials, from_sender)
+
+
+def test_possible_delay_with_a_date_is_a_change():
+    # The LLM read "earliest we can now get it to site is 12 Jan" as not firm.
+    e = email("Earliest we can now get PO-24110 to site is Tuesday 12th January 2027")
+    result = extraction("possible_delay", [item("PO-24110", "Steel", date(2027, 1, 12))])
+    (change,) = emitted(e, result, {"PO-24110": STEEL})
+    assert change.type == DELIVERY_DATE_CHANGED
+    assert change.payload["new_delivery"] == "2027-01-12"
+
+
+def test_resent_order_acknowledgement_for_known_po_is_a_confirmation():
+    # The LLM labelled "PO-24110 scheduled for 29/12/2026 as planned" an order.
+    e = email("Order PO-24110 is scheduled for delivery on 29/12/2026 as planned")
+    result = extraction("order_confirmation", [item("PO-24110", "Steel", date(2026, 12, 29))])
+    (confirmed,) = emitted(e, result, {"PO-24110": STEEL})
+    assert confirmed.type == DELIVERY_CONFIRMED

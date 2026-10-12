@@ -39,12 +39,19 @@ def apply_rules(email: Email) -> RuleFacts:
 
 
 EmailKind = Literal[
-    "order_confirmation",  # new order(s) with planned delivery dates
-    "delivery_change",  # a firm new delivery date
-    "delivery_confirmation",  # delivery confirmed, date restated
-    "possible_delay",  # a delay is hinted at but there is no firm date
+    "order_confirmation",
+    "delivery_change",
+    "delivery_confirmation",
+    "possible_delay",
     "not_relevant",
 ]
+KIND_DESCRIPTION = """What the message is about:
+- order_confirmation: a supplier acknowledges an order and gives planned delivery dates
+- delivery_change: a delivery moves to a new date. Use this whenever a new date is
+  given, even if it is phrased as "earliest", "now expected" or "approximately"
+- delivery_confirmation: a delivery is confirmed for the date already planned
+- possible_delay: a delay is hinted at but no new date is given
+- not_relevant: marketing, invoices or anything not about orders or deliveries"""
 
 
 class ExtractedItem(BaseModel):
@@ -56,17 +63,19 @@ class ExtractedItem(BaseModel):
 
 
 class EmailExtraction(BaseModel):
-    kind: EmailKind
+    kind: EmailKind = Field(description=KIND_DESCRIPTION)
     supplier: str | None = Field(description="Supplier company name")
     items: list[ExtractedItem]
     reason: str | None = Field(description="Why the delivery changed, if it did")
     confidence: float = Field(description="0 to 1: how sure you are about the whole extraction")
 
 
-SYSTEM_PROMPT = """You read messages about construction material deliveries for a UK
+SYSTEM_PROMPT = f"""You read messages about construction material deliveries for a UK
 contractor: emails from suppliers, or chat messages from the contractor's own team
 passing on news (e.g. "Pennine rang, steel is now 12 Jan").
 Classify the message and extract every order or delivery it mentions.
+
+{KIND_DESCRIPTION}
 
 Rules:
 - Use only what the email says. Never invent PO numbers or dates.
