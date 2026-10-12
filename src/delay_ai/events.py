@@ -21,6 +21,8 @@ MATERIAL_LINKED = "MaterialLinked"
 DELAY_ASSESSED = "DelayAssessed"
 RECOVERY_OPTIONS_PROPOSED = "RecoveryOptionsProposed"
 OPTION_CHOSEN = "OptionChosen"
+ACTIVITY_DISRUPTED = "ActivityDisrupted"
+DISRUPTION_ASSESSED = "DisruptionAssessed"
 ACTION_PLAN_DRAFTED = "ActionPlanDrafted"
 
 SCHEMA = """

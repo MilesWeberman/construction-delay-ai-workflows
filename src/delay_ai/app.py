@@ -30,6 +30,7 @@ from delay_ai.events import (
     DELAY_ASSESSED,
     DELIVERY_CONFIRMED,
     DELIVERY_DATE_CHANGED,
+    DISRUPTION_ASSESSED,
     EMAIL_IGNORED,
     EMAIL_RECEIVED,
     MATERIAL_ORDERED,
@@ -169,7 +170,7 @@ materials = build_materials(events)
 by_po = {m.po_number: m for m in materials}
 schedule = schedule_with_materials(activities, materials, project.start_date)
 original = compute_schedule(base, project.start_date)
-delays = of_type(events, DELAY_ASSESSED)
+delays = of_type(events, DELAY_ASSESSED, DISRUPTION_ASSESSED)  # late deliveries, site news
 proposals = of_type(events, RECOVERY_OPTIONS_PROPOSED)
 chosen = {e.payload["options_event"]: e for e in of_type(events, OPTION_CHOSEN)}
 
@@ -180,6 +181,8 @@ with st.sidebar:
     st.markdown(
         "You can:  \n"
         "- **Report a delivery change**, e.g. *Pennine rang, steel now arrives 19 Jan*\n"
+        "- **Report site news**, e.g. *Storm Thursday to Monday, no crane lifts* or "
+        "*Drylining gang is two men short this month*\n"
         "- **Try a schedule change**, e.g. *Can glazing start floor by floor during decking?*\n"
         "- **Ask about the schedule**, e.g. *Why don't the late kitchens move completion?*"
     )
@@ -223,20 +226,25 @@ def recovery_options(proposal: Event) -> None:
                 st.write(f"**Risks:** {o['risks']}")
 
 
+def capitalised(text: str) -> str:
+    return text[:1].upper() + text[1:]
+
+
 absorbed = []
 for delay in delays:
     p = delay.payload
-    description = by_po[p["po_number"]].description
-    material = description[:1].upper() + description[1:]
+    if delay.type == DELAY_ASSESSED:
+        name = capitalised(by_po[p["po_number"]].description)
+        when = f"{short(p['new_delivery'])} instead of {short(p['old_delivery'])}"
+        what = f"**{name}** now arrives {when}"
+    else:
+        name = capitalised(p["summary"])
+        what = f"**{name}**"
     if p["project_slip_days"] <= 0:
-        absorbed.append(material)
+        absorbed.append(name)
         continue
     with st.container(border=True):
-        st.markdown(
-            f"⚠️ **{material}** now arrives {short(p['new_delivery'])} instead of "
-            f"{short(p['old_delivery'])}. Completion moves {p['project_slip_days']} "
-            "working days later."
-        )
+        st.markdown(f"⚠️ {what}. Completion moves {p['project_slip_days']} working days later.")
         for proposal in proposals:
             if proposal.payload.get("assessment_event") == delay.id:
                 recovery_options(proposal)
@@ -274,7 +282,7 @@ if links:
             st.button("Confirm all", key="confirm-all", on_click=queue, args=("link", picks))
 
 if absorbed:
-    st.caption(f"Also delayed, with no effect on completion: {', '.join(absorbed)}.")
+    st.caption(f"Also reported, with no effect on completion: {'; '.join(absorbed)}.")
 
 # ---------- schedule ----------
 
@@ -299,7 +307,7 @@ for m in materials:
     )
 first_problem = next((d for d in delays if d.payload["project_slip_days"] > 0), None)
 opens_on = (
-    date.fromisoformat(first_problem.payload["new_delivery"])
+    schedule.start_of(first_problem.payload["delayed_activities"][0])
     if first_problem
     else project.start_date
 )

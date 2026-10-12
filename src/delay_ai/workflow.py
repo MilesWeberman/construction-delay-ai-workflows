@@ -6,9 +6,11 @@ from delay_ai.actions import draft_with_llm, make_action_handler
 from delay_ai.chat import make_chat_handler
 from delay_ai.cpm import compute_schedule
 from delay_ai.events import (
+    ACTIVITY_DISRUPTED,
     CHAT_MESSAGE_RECEIVED,
     DELAY_ASSESSED,
     DELIVERY_DATE_CHANGED,
+    DISRUPTION_ASSESSED,
     EMAIL_RECEIVED,
     MATERIAL_LINKED,
     MATERIAL_ORDERED,
@@ -16,7 +18,7 @@ from delay_ai.events import (
     EventStore,
 )
 from delay_ai.extraction import extract_with_llm
-from delay_ai.impact import make_impact_handler
+from delay_ai.impact import make_disruption_handler, make_impact_handler
 from delay_ai.ingestion import make_email_handler
 from delay_ai.linking import make_link_handler, suggest_with_llm
 from delay_ai.loaders import load_contacts, load_project, load_schedule
@@ -32,13 +34,16 @@ def handlers(store: EventStore, data: Path) -> dict[str, Handler]:
     schedule = compute_schedule(activities, start_date)
     impact = make_impact_handler(store, activities, start_date)
     messages = make_email_handler(store, extract_with_llm)
+    planner = make_planner_handler(store, activities, start_date, propose_with_llm)
     return {
         EMAIL_RECEIVED: messages,
         CHAT_MESSAGE_RECEIVED: make_chat_handler(store, activities, start_date, messages),
         MATERIAL_ORDERED: make_link_handler(activities, schedule, suggest_with_llm),
         DELIVERY_DATE_CHANGED: impact,
         MATERIAL_LINKED: impact,
-        DELAY_ASSESSED: make_planner_handler(store, activities, start_date, propose_with_llm),
+        ACTIVITY_DISRUPTED: make_disruption_handler(store, activities, start_date),
+        DELAY_ASSESSED: planner,
+        DISRUPTION_ASSESSED: planner,
         OPTION_CHOSEN: make_action_handler(
             store, activities, start_date, contacts, project.name, draft_with_llm
         ),

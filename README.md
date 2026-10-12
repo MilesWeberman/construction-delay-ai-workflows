@@ -112,13 +112,17 @@ automatically when the rules and the LLM agree; otherwise a planner confirms it:
 uv run delay-ai link PO-24150 A13
 ```
 
-The chat takes three kinds of message. Delivery news (e.g. from a phone call)
-goes through the same rules, LLM and checks as an email. A suggested schedule
+The chat takes four kinds of message. Delivery news (e.g. from a phone call)
+goes through the same rules, LLM and checks as an email. Site news (weather,
+labour, plant, access) is recorded as a task taking longer or not being able to
+start before a date; its effect on completion is assessed and, if it slips,
+recovery options are proposed, just like a late delivery. A suggested schedule
 change is turned into edits, scored by the CPM, and can be chosen like a
 recovery option. Questions are answered from the knowledge files and the plan:
 
 ```bash
 uv run delay-ai chat "Pennine rang: steel PO-24110 now arriving 19/01/2027" --author "Priya Shah"
+uv run delay-ai chat "Drylining gang is two men short for the next month"
 uv run delay-ai chat "Can glazing start as soon as decking is under way?"
 uv run delay-ai chat "Why is the kitchen delay not affecting the finish?"
 ```
@@ -190,6 +194,9 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - Chat messages are trusted as coming from the team: they can update any
   supplier's order, but can't create new orders.
 - The chat has no memory of earlier messages; each message stands alone.
+- Site news from the chat is applied to the schedule straight away (no review),
+  and only as "takes N more days" or "can't start before a date". Weather isn't
+  read from a forecast service.
 
 **Events**
 - One SQLite file, and one CLI run at a time per database (a lock file refuses a

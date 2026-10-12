@@ -6,6 +6,7 @@ import litellm
 from pydantic import BaseModel
 
 DEFAULT_MODEL = "anthropic/claude-sonnet-5"
+MAX_TOKENS = 16000  # recovery options with the knowledge files run past 4k
 TIMEOUT_SECONDS = 180  # the planner call is the slowest, usually under a minute
 KEY_FOR_PROVIDER = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 
@@ -28,7 +29,10 @@ def complete_structured[T: BaseModel](system: str, user: str, schema: type[T]) -
         model=model(),
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         response_format=schema,
-        max_tokens=4096,
+        max_tokens=MAX_TOKENS,
         timeout=TIMEOUT_SECONDS,
     )
-    return schema.model_validate_json(response.choices[0].message.content)
+    choice = response.choices[0]
+    if choice.finish_reason == "length":
+        raise RuntimeError(f"The LLM's answer was cut off at {MAX_TOKENS} tokens")
+    return schema.model_validate_json(choice.message.content)

@@ -15,6 +15,7 @@ from delay_ai.events import (
     ACTION_PLAN_DRAFTED,
     CHAT_REPLIED,
     DELAY_ASSESSED,
+    DISRUPTION_ASSESSED,
     NEEDS_REVIEW,
     OPTION_CHOSEN,
     RECOVERY_OPTIONS_PROPOSED,
@@ -64,10 +65,19 @@ def report(store: EventStore) -> None:
             )
             moved = f"{p['old_delivery']} -> {p['new_delivery']}"
             print(f"  {p['po_number']} ({p['activity_id']}): {moved}, {effect}")
+    for e in events:
+        if e.type == DISRUPTION_ASSESSED:
+            p = e.payload
+            effect = (
+                f"project +{p['project_slip_days']} days, finish {p['new_finish']}"
+                if p["project_slip_days"] > 0
+                else "finish unchanged"
+            )
+            print(f"  Site news: {p['summary']}, {effect}")
     print("\nRecovery options:")
     for e in events:
         if e.type == RECOVERY_OPTIONS_PROPOSED:
-            about = e.payload["po_number"] or "a change suggested in chat"
+            about = e.payload["po_number"] or "site news or a change suggested in chat"
             print(f"  For {about} (event {e.id}):")
             for n, o in enumerate(e.payload["options"], start=1):
                 print(

@@ -6,7 +6,14 @@ from datetime import date
 from pydantic import BaseModel
 
 from delay_ai.cpm import Schedule, compute_schedule, working_days_between
-from delay_ai.events import DELAY_ASSESSED, DELIVERY_DATE_CHANGED, Emit, Event, EventStore
+from delay_ai.events import (
+    DELAY_ASSESSED,
+    DELIVERY_DATE_CHANGED,
+    DISRUPTION_ASSESSED,
+    Emit,
+    Event,
+    EventStore,
+)
 from delay_ai.materials import build_materials
 from delay_ai.models import Activity, Material
 from delay_ai.plan import current_activities
@@ -38,7 +45,13 @@ def material_constraints(materials: list[Material], start_date: date) -> dict[st
 def schedule_with_materials(
     activities: list[Activity], materials: list[Material], start_date: date
 ) -> Schedule:
-    return compute_schedule(activities, start_date, material_constraints(materials, start_date))
+    """The schedule given material arrivals and any 'can't start before' dates."""
+    constraints = material_constraints(materials, start_date)
+    for a in activities:
+        if a.not_before:
+            ready = working_days_between(start_date, a.not_before)
+            constraints[a.id] = max(constraints.get(a.id, 0), ready)
+    return compute_schedule(activities, start_date, constraints)
 
 
 def assess_delivery_change(
@@ -127,5 +140,36 @@ def make_impact_handler(
         events = store.all()
         activities = current_activities(base, events)
         return assess_unassessed_changes(event.payload["po_number"], events, activities, start_date)
+
+    return handle
+
+
+def make_disruption_handler(
+    store: EventStore, base: list[Activity], start_date: date
+) -> Callable[[Event], list[Emit]]:
+    """ActivityDisrupted (site news) -> DisruptionAssessed: what it does to completion."""
+
+    def handle(event: Event) -> list[Emit]:
+        events = store.all()
+        materials = build_materials(events)
+        before_plan = current_activities(base, [e for e in events if e.id < event.id])
+        after_plan = current_activities(base, [e for e in events if e.id <= event.id])
+        before = schedule_with_materials(before_plan, materials, start_date)
+        after = schedule_with_materials(after_plan, materials, start_date)
+        moved = [
+            a.id
+            for a in after_plan
+            if after.activities[a.id].early_start > before.activities[a.id].early_start
+            or after.activities[a.id].early_finish > before.activities[a.id].early_finish
+        ]
+        payload = {
+            "disruption_event": event.id,
+            "summary": event.payload["summary"],
+            "project_slip_days": after.duration_days - before.duration_days,
+            "old_finish": str(before.finish_date),
+            "new_finish": str(after.finish_date),
+            "delayed_activities": moved,
+        }
+        return [Emit(DISRUPTION_ASSESSED, payload)]
 
     return handle

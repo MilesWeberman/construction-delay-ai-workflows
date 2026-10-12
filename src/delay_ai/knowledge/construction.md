@@ -36,6 +36,28 @@ experience.
   replace mid-project.
 - Kitchens are usually delivered in one or more drops; phasing by floor is common.
 
+## Weather
+- Tower and mobile cranes stop lifting in high wind; gusts above roughly 38 mph
+  (about 17 m/s) usually halt lifts, and lower limits apply to large panels such
+  as curtain walling or decking sheets.
+- Concrete pours need protection or postponement in frost (below about 5 °C and
+  falling); screeds and plaster dry slowly in cold, damp weather.
+- Roofing, membranes and external sealants need dry conditions; heavy rain stops
+  them, and wet weather slows groundworks and external works.
+- Once the building is watertight, internal trades are largely unaffected by
+  weather.
+- A day of bad weather during a task usually means a day added to it, not a
+  shift of the whole programme.
+
+## Labour and plant
+- A gang short of operatives works proportionally slower: two out of six fitters
+  missing is roughly a third less output.
+- Specialist crews (steel erectors, curtain wall installers, lift engineers) are
+  hard to replace at short notice; general trades are easier.
+- Plant breakdowns (crane, hoist) stop the tasks that depend on them until a
+  replacement arrives, often a few days.
+- Holidays (Christmas, Easter, summer weeks) reduce labour availability.
+
 ## Safety and regulation
 - CDM 2015 places duties on the principal contractor for planning and managing
   work safely. Programme changes must not compromise temporary works, edge
