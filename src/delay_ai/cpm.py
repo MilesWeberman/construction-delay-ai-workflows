@@ -57,6 +57,11 @@ class Schedule(BaseModel):
     def start_of(self, activity_id: str) -> date:
         return add_working_days(self.start_date, self.activities[activity_id].early_start)
 
+    def end_of(self, activity_id: str) -> date:
+        """The last working day of the activity."""
+        a = self.activities[activity_id]
+        return add_working_days(self.start_date, max(a.early_finish - 1, a.early_start))
+
     def critical_path(self) -> list[str]:
         return [a.id for a in self.activities.values() if a.is_critical]
 

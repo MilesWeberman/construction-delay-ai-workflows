@@ -40,7 +40,7 @@ def describe_plan(schedule: Schedule, activities: list[Activity], materials: lis
         after = ", ".join(a.predecessors) or "-"
         lines.append(
             f"- {a.id} {a.name} ({a.trade}), {a.duration_days}d, after {after}, "
-            f"starts {schedule.start_of(a.id)}, {flag}"
+            f"{schedule.start_of(a.id)} to {schedule.end_of(a.id)}, {flag}"
         )
     lines.append("\nMaterials:")
     for m in materials:
