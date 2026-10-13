@@ -118,10 +118,6 @@ export function Links({ view, act, busy }: Props) {
           </div>
         ))}
       </div>
-      {view.links.length > 1 && (
-        <button className="primary" disabled={busy}
-          onClick={() => confirm(view.links.map((l) => [l.po, pick(l.po, l.suggested)]))}>Confirm all</button>
-      )}
     </div>
   )
 }

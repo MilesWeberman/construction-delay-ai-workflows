@@ -66,10 +66,10 @@ export default function App() {
             <Alerts view={view} act={act} busy={busy !== null} />
             <Section title="Schedule">
               <Schedule view={view} />
-              {view.links.length > 0 && <Links view={view} act={act} busy={busy !== null} />}
             </Section>
             <Section title="Materials">
               <Materials items={view.materials} />
+              {view.links.length > 0 && <Links view={view} act={act} busy={busy !== null} />}
             </Section>
           </>
         )}
