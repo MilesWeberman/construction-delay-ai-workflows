@@ -86,7 +86,7 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
              "recovery": recovery}
         )  # fmt: skip
     for proposal in proposals:
-        if proposal.payload.get("chat_event"):  # a change suggested in the chat
+        if proposal.payload.get("chat_event") and proposal.payload["options"]:  # from the chat
             alerts.append(
                 {"kind": "suggestion", "headline": "Your suggested change", "slip_days": 0,
                  "recovery": options(proposal)}

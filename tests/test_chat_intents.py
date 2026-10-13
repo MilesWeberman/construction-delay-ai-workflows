@@ -74,10 +74,11 @@ def test_impossible_change_is_explained(setup):
     plan = RecoveryPlan(
         options=[option("Halve steel", edit("shorten", activity_id="A05", days=10))]
     )
-    _, text = send(
+    new, text = send(
         setup, "Halve steel erection", "schedule_change", propose_change=lambda t, p: plan
     )
-    assert text == "I couldn't model that: Cannot shorten A05 by 10 (max 6)."
+    assert text == "I couldn't model that (Cannot shorten A05 by 10 (max 6))."
+    assert not [e for e in new if e.type == RECOVERY_OPTIONS_PROPOSED]  # no empty card
 
 
 def test_question_is_answered_with_the_live_plan(setup):
