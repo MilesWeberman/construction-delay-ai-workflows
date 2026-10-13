@@ -90,6 +90,10 @@ def fake_propose(impact, schedule, activities, materials):
                 "Phased steel delivery",
                 edit("change_delivery", po_number="PO-24110", new_delivery=date(2027, 1, 5)),
             ),
+            option(
+                "Earlier decking delivery",
+                edit("change_delivery", po_number="PO-24111", new_delivery=date(2027, 1, 20)),
+            ),
             option("Impossible", edit("shorten", activity_id="A05", days=15)),
         ]
     )
@@ -111,12 +115,18 @@ def test_steel_delay_gets_scored_options(sample_dir, activities, monkeypatch):
     (steel,) = proposals  # lifts and kitchens are absorbed, so only steel gets options
     options = steel.payload["options"]
 
-    # Each edit wins back 5 days on steel, but then the late kitchens (23 June)
+    # Overtime wins back 5 days on steel, but then the late kitchens (23 June)
     # become the constraint again, so only 4 days are really recovered.
     recovered = {o["title"]: o["recovered_days"] for o in options}
-    assert recovered == {"Overtime on decking": 4, "Phased steel delivery": 4}
+    # Decking isn't late, so asking for it earlier is allowed (it just doesn't help here)
+    assert recovered == {"Overtime on decking": 4, "Earlier decking delivery": 0}
     assert options[0]["new_finish"] == "2027-08-26"  # 7 days late, 4 recovered
-    assert steel.payload["rejected"][0]["title"] == "Impossible"
+    rejected = {r["title"]: r["problems"] for r in steel.payload["rejected"]}
+    # Pennine has just said 12 Jan is their earliest date for the steel
+    assert rejected["Phased steel delivery"] == [
+        "The supplier has just said PO-24110 can't arrive earlier"
+    ]
+    assert "Impossible" in rejected
 
 
 def test_no_options_when_delay_is_absorbed(activities):

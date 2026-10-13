@@ -21,9 +21,12 @@ this file to add the contractor's own experience.
 - Acceleration only helps on the critical path; check float first.
 
 ## Deliveries
-- Ask suppliers for phased deliveries: steel by erection sequence (first grid
-  lines or first lift), kitchens and bathrooms floor by floor. Work can start on
-  the first phase.
+- When an order is late, the supplier has just told you their earliest date.
+  Don't propose asking them to bring that same order forward: recover the time
+  elsewhere in the programme.
+- For orders that aren't late yet, phased deliveries help: steel by erection
+  sequence, kitchens and bathrooms floor by floor. Work can start on the first
+  phase.
 - An alternative supplier is worth asking about for standard items (plasterboard,
   sanitaryware, flooring), rarely for fabricated or bespoke items (steel,
   curtain walling, lifts).

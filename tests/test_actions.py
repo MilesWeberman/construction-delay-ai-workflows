@@ -79,16 +79,15 @@ def test_choosing_overtime_updates_plan_and_notifies_affected_people(workflow):
     assert "Expected finish: 2027-08-26 (was 2027-09-01, 4 working days recovered)" in pm
 
 
-def test_choosing_phased_delivery_asks_supplier_and_leaves_plan_alone(workflow):
+def test_choosing_an_earlier_delivery_asks_supplier_and_leaves_plan_alone(workflow):
     store, orchestrator, activities = workflow
-    messages = choose(store, orchestrator, "Phased steel delivery")
+    messages = choose(store, orchestrator, "Earlier decking delivery")
 
     assert current_activities(activities, store.all()) == activities  # waits for supplier
     ask = messages["orders@pennine-steel.example"]["body"]
-    assert "Can PO-24110 (Structural steel frame) be delivered on 2027-01-05" in ask
-    assert "d.mitchell@pennine-steel.example" not in messages  # nothing moves yet
+    assert "Can PO-24111 (Composite metal decking) be delivered on 2027-01-20" in ask
     pm = messages["s.okafor@contractor.example"]["body"]
-    assert "4 working days recovered), if the supplier confirms the earlier delivery" in pm
+    assert "if the supplier confirms the earlier delivery" in pm
 
 
 def test_finish_is_recalculated_when_chosen_not_taken_from_the_proposal(workflow):
