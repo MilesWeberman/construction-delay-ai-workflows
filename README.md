@@ -140,7 +140,7 @@ recovery option. Questions are answered from the knowledge files and the plan:
 ```bash
 uv run delay-ai chat "Pennine rang: steel PO-24110 now arriving 19/01/2027" --author "Priya Shah"
 uv run delay-ai chat "Drylining gang is two men short for the next month"
-uv run delay-ai chat "Can glazing start as soon as decking is under way?"
+uv run delay-ai chat "What if we add a second steel erection gang?"
 uv run delay-ai chat "Why is the kitchen delay not affecting the finish?"
 ```
 

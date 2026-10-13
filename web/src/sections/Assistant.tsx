@@ -6,7 +6,7 @@ import type { View } from '../api'
 const STARTERS = [
   'Pennine rang, steel now arrives 19 Jan',
   'Storm forecast 25 to 29 January, no crane lifts',
-  'Can glazing start floor by floor during decking?',
+  'What if we add a second steel erection gang?',
   "Why don't the late lifts move completion?",
 ]
 
