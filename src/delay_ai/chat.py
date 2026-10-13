@@ -42,7 +42,7 @@ class Intent(BaseModel):
 site_news: something on site stops or slows work: weather, labour or crew
 availability, plant breakdown, access, a failed inspection.
 schedule_change: the user proposes or asks about changing the programme, including
-questions like "Can glazing start floor by floor?" or "What if we add a second
+questions like "Can curtain walling follow the frame floor by floor?" or "What if we add a second
 gang?" (resequence, speed up, ask a supplier for an earlier delivery).
 question: anything else, e.g. why something is late, when a task starts, what a
 delay means."""
@@ -79,10 +79,15 @@ change to the programme. Turn it into one option made of edits:
 - add_dependency: make activity_id wait for predecessor_id (to change the order)
 - shorten: take days off activity_id (extra labour, longer shifts)
 - change_delivery: ask the supplier of po_number to deliver earlier, on new_delivery
-Use only these four edit types, never lengthen or not_before. Starting work
-earlier or overlapping it ("floor by floor", "while X is still going") is a
-remove_dependency, usually from the predecessor it would otherwise wait for.
-Model what the user asked for, even if you have doubts; put doubts in the risks.
+Use only these four edit types, never lengthen or not_before.
+Model exactly what the user describes, not a different idea you prefer:
+- more people, a second gang or crew, longer shifts, weekend working → shorten
+  that activity (be realistic: a second gang rarely halves a task)
+- starting work earlier or overlapping it ("floor by floor", "while X is still
+  going") → remove_dependency from the predecessor it would otherwise wait for
+- doing one task before another → add_dependency (with remove_dependency to swap)
+- asking a supplier for an earlier date → change_delivery
+Put any doubts in the risks.
 Days recovered are calculated afterwards, so don't state them.
 
 {knowledge.load()}"""
@@ -231,7 +236,7 @@ def make_chat_handler(
                 f"I couldn't model that ({reasons})."
                 if reasons and "recover time" not in reasons
                 else "I couldn't turn that into a change I can check. Could you put it another "
-                "way, e.g. *start glazing once level 2 is decked*?"
+                "way, e.g. *add a second steel erection gang*?"
             )
         if not options:  # nothing to choose, so no card on the schedule; the reply says why
             return [reply(event, text)]
