@@ -21,6 +21,7 @@ from delay_ai.events import (
     DELIVERY_CONFIRMED,
     DELIVERY_DATE_CHANGED,
     NEEDS_REVIEW,
+    OPTION_CHOSEN,
     RECOVERY_OPTIONS_PROPOSED,
     Emit,
     Event,
@@ -40,9 +41,11 @@ class Intent(BaseModel):
         description="""delivery_news: news about a material order or delivery date.
 site_news: something on site stops or slows work: weather, labour or crew
 availability, plant breakdown, access, a failed inspection.
-schedule_change: the user proposes changing the programme (resequence, speed up,
-ask a supplier for an earlier delivery).
-question: anything else, e.g. asking about the plan, a delay or construction."""
+schedule_change: the user proposes or asks about changing the programme, including
+questions like "Can glazing start floor by floor?" or "What if we add a second
+gang?" (resequence, speed up, ask a supplier for an earlier delivery).
+question: anything else, e.g. why something is late, when a task starts, what a
+delay means."""
     )
 
 
@@ -76,6 +79,9 @@ change to the programme. Turn it into one option made of edits:
 - add_dependency: make activity_id wait for predecessor_id (to change the order)
 - shorten: take days off activity_id (extra labour, longer shifts)
 - change_delivery: ask the supplier of po_number to deliver earlier, on new_delivery
+Use only these four edit types, never lengthen or not_before. Starting work
+earlier or overlapping it ("floor by floor", "while X is still going") is a
+remove_dependency, usually from the predecessor it would otherwise wait for.
 Model what the user asked for, even if you have doubts; put doubts in the risks.
 Days recovered are calculated afterwards, so don't state them.
 
@@ -162,6 +168,8 @@ def make_chat_handler(
         schedule = schedule_with_materials(activities, materials, start_date)
         plan = describe_plan(schedule, activities, materials)
         plan += f"\n\nCurrent finish: {schedule.finish_date}"
+        if changes := what_changed(events, materials):
+            plan += f"\n\nWhat has changed so far:\n{changes}"
         if history:
             plan += f"\n\nRecent conversation:\n{history}"
 
@@ -219,10 +227,36 @@ def make_chat_handler(
             )
         else:
             reasons = "; ".join(p for r in rejected for p in r["problems"])
-            text = f"I couldn't model that: {reasons or 'I could not turn it into a change'}."
+            text = (
+                f"I couldn't model that ({reasons})."
+                if reasons and "recover time" not in reasons
+                else "I couldn't turn that into a change I can check. Could you put it another "
+                "way, e.g. *start glazing once level 2 is decked*?"
+            )
+        if not options:  # nothing to choose, so no card on the schedule; the reply says why
+            return [reply(event, text)]
         return [Emit(RECOVERY_OPTIONS_PROPOSED, payload), reply(event, text)]
 
     return handle
+
+
+def what_changed(events: list[Event], materials: list[Material]) -> str:
+    """Delivery moves (with reasons), site news and chosen options, oldest first."""
+    names = {m.po_number: m.description for m in materials}
+    lines = []
+    for e in events:
+        p = e.payload
+        if e.type == DELIVERY_DATE_CHANGED:
+            reason = f" ({p['reason']})" if p.get("reason") else ""
+            lines.append(
+                f"- {names.get(p['po_number'], p['po_number'])} ({p['po_number']}) delivery "
+                f"moved from {p['old_delivery']} to {p['new_delivery']}{reason}"
+            )
+        elif e.type == ACTIVITY_DISRUPTED:
+            lines.append(f"- Site news: {p['summary']}")
+        elif e.type == OPTION_CHOSEN:
+            lines.append(f"- Recovery option chosen: {p['option']['title']}")
+    return "\n".join(lines)
 
 
 NOT_SURE = (

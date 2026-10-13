@@ -8,7 +8,8 @@ import Materials from './sections/Materials'
 import Outbox from './sections/Outbox'
 import Schedule from './sections/Schedule'
 
-export type Act = (action: Action, busyLabel: string) => Promise<void>
+// Resolves to an error message, or null if it worked.
+export type Act = (action: Action, busyLabel: string) => Promise<string | null>
 type Tab = 'schedule' | 'inbox' | 'outbox'
 
 export default function App() {
@@ -17,18 +18,22 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('schedule')
 
-  const load = async (action?: Action, busyLabel?: string) => {
+  const load = async (action?: Action, busyLabel?: string, quiet = false) => {
     setBusy(busyLabel ?? null)
     setError(null)
     try {
       setView(await fetchView(action))
+      return null
     } catch (e) {
-      setError((e as Error).message)
+      const message = (e as Error).message
+      if (!quiet) setError(message)
+      return message
     } finally {
       setBusy(null)
     }
   }
-  const act: Act = (action, busyLabel) => load(action, busyLabel)
+  // chat errors are shown inside the chat, everything else at the top of the page
+  const act: Act = (action, busyLabel) => load(action, busyLabel, action.kind === 'chat')
 
   useEffect(() => {
     load()
@@ -88,7 +93,7 @@ export default function App() {
           load()
         }}
       />
-      {busy && <div className="toast">{busy}…</div>}
+      {busy && busy !== 'Thinking' && <div className="toast">{busy}…</div>}
     </div>
   )
 }
