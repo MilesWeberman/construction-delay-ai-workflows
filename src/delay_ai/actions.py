@@ -63,6 +63,9 @@ def recipients(
             if e.type == "shorten" and e.activity_id in ids:
                 exact = f"{e.activity_id} to be done {e.days} working days faster"
                 facts.append(Fact(exact, f"{e.activity_id} to be done faster"))
+            if e.type == "add_dependency" and e.activity_id in ids:
+                text = f"{e.activity_id} now waits for {e.predecessor_id}"
+                facts.append(Fact(text, text))
             if e.type == "remove_dependency" and e.activity_id in ids:
                 text = f"{e.activity_id} no longer waits for {e.predecessor_id}"
                 facts.append(Fact(text, text))

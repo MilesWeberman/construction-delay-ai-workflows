@@ -4,6 +4,7 @@
 export type Option = {
   number: number
   title: string
+  strategy: 'resequence' | 'accelerate' | 'supply'
   recovered_days: number
   new_finish: string
   cost: string

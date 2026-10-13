@@ -11,15 +11,25 @@ from delay_ai.models import Activity, Material
 MAX_SHORTEN = 0.3  # share of an activity's duration that acceleration can save
 MAX_LENGTHEN = 60  # working days; anything longer is more likely a misreading
 # Earlier deliveries only count once the supplier confirms them by email.
-RECOVERY_EDITS = {"remove_dependency", "shorten"}
+RECOVERY_EDITS = {"remove_dependency", "add_dependency", "shorten"}
 # Site news (weather, labour, plant): a task takes longer or can't start yet.
 SITE_EDITS = {"lengthen", "not_before"}
 
 
 class Edit(BaseModel):
-    type: Literal["remove_dependency", "shorten", "change_delivery", "lengthen", "not_before"]
+    type: Literal[
+        "remove_dependency",
+        "add_dependency",
+        "shorten",
+        "change_delivery",
+        "lengthen",
+        "not_before",
+    ]
     activity_id: str | None = Field(description="The activity the edit is about")
-    predecessor_id: str | None = Field(description="For remove_dependency: the link to drop")
+    predecessor_id: str | None = Field(
+        description="For remove_dependency: the link to drop. For add_dependency: the "
+        "activity that must now finish first"
+    )
     days: int | None = Field(description="For shorten and lengthen: working days")
     po_number: str | None = Field(description="For change_delivery")
     new_delivery: date | None = Field(
@@ -44,6 +54,13 @@ def apply_edits(
                 problems.append(f"{edit.activity_id} does not follow {edit.predecessor_id}")
             else:
                 activity.predecessors.remove(edit.predecessor_id)
+        elif edit.type == "add_dependency":
+            if activity is None or edit.predecessor_id not in acts:
+                problems.append(f"Unknown activity {edit.activity_id} or {edit.predecessor_id}")
+            elif edit.predecessor_id in activity.predecessors:
+                problems.append(f"{edit.activity_id} already follows {edit.predecessor_id}")
+            else:
+                activity.predecessors.append(edit.predecessor_id)
         elif edit.type == "shorten":
             limit = int(activity.duration_days * MAX_SHORTEN) if activity else 0
             if activity is None or not edit.days or not 0 < edit.days <= limit:

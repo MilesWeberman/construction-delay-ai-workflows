@@ -158,3 +158,8 @@ button.action { display: block; margin-top: 6px; }
 .review-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
 a.button { display: inline-block; text-decoration: none; border-radius: 8px; padding: 6px 14px; border: 1px solid var(--accent); }
 a.button.primary { background: var(--accent); color: #fff; }
+
+.strategy { display: inline-block; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+.strategy.resequence { color: #2563eb; }
+.strategy.accelerate { color: #7c3aed; }
+.strategy.supply { color: #0f766e; }

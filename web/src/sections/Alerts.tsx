@@ -5,6 +5,12 @@ import { days, shortDate } from '../format'
 
 type Props = { view: View; act: Act; busy: boolean }
 
+const STRATEGY = {
+  resequence: 'Resequence · no extra labour',
+  accelerate: 'Speed up · extra resource',
+  supply: 'Supply · earlier delivery',
+}
+
 export default function Alerts({ view, act, busy }: Props) {
   return (
     <div className="alerts" id="alerts">
@@ -69,6 +75,7 @@ function OptionRow({ option, busy, onChoose }: { option: Option; busy: boolean; 
   return (
     <div className="option">
       <div className="grow">
+        <span className={`strategy ${option.strategy}`}>{STRATEGY[option.strategy]}</span>
         <div className="option-title">{option.title}</div>
         <div className="muted small">
           {option.recovered_days > 0

@@ -56,8 +56,9 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
             "event": proposal.id,
             "chosen": choice.payload["option"]["title"] if choice else None,
             "options": [
-                {"number": n, **{k: o[k] for k in ("title", "recovered_days", "new_finish",
-                                                    "cost", "rationale", "risks")}}
+                {"number": n, "strategy": o.get("strategy", "accelerate"),
+                 **{k: o[k] for k in ("title", "recovered_days", "new_finish",
+                                      "cost", "rationale", "risks")}}
                 for n, o in enumerate(proposal.payload["options"], start=1)
             ],
         }  # fmt: skip
