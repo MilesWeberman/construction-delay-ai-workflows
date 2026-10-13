@@ -73,6 +73,7 @@ def classify_with_llm(text: str) -> Intent:
 CHANGE_PROMPT = f"""You are a senior UK construction planner. The user suggests a
 change to the programme. Turn it into one option made of edits:
 - remove_dependency: let activity_id start without waiting for predecessor_id
+- add_dependency: make activity_id wait for predecessor_id (to change the order)
 - shorten: take days off activity_id (extra labour, longer shifts)
 - change_delivery: ask the supplier of po_number to deliver earlier, on new_delivery
 Model what the user asked for, even if you have doubts; put doubts in the risks.

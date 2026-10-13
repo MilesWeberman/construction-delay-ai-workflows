@@ -27,9 +27,13 @@ and the chatbot's prompts.
 - The effect on completion depends on float, like a late delivery.
 
 ## Recovery techniques
-- **Resequencing / fast-tracking**: overlap activities that were planned in
-  series, e.g. facade following the frame floor by floor. Modelled as dropping a
-  dependency. Adds coordination and interface risk.
+- **Resequencing / fast-tracking**: change the order or overlap of work without
+  extra resource, e.g. facade following the frame floor by floor, fitting out
+  lower floors while upper floors are still being closed in, or swapping two
+  trades so the one whose materials are on site goes first. Often wins back fewer
+  days than acceleration, but costs little and doesn't depend on finding more
+  labour. Modelled as dropping a dependency, and adding one to swap an order.
+  Adds coordination and interface risk.
 - **Crashing / acceleration**: add labour or shifts to shorten an activity.
   Modelled as shortening it, at most 30% for labour-driven work. Costs money and
   has diminishing returns.

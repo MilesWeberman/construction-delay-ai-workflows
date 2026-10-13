@@ -30,8 +30,10 @@ def edit(type, **fields):
     return Edit(type=type, **{**defaults, **fields})
 
 
-def option(title, *edits):
-    return RecoveryOption(title=title, edits=list(edits), rationale="r", risks="r", cost="c")
+def option(title, *edits, strategy="accelerate"):
+    return RecoveryOption(
+        title=title, strategy=strategy, edits=list(edits), rationale="r", risks="r", cost="c"
+    )
 
 
 @pytest.fixture
@@ -149,3 +151,32 @@ def test_planner_prompt_includes_all_knowledge_files():
     assert "# Construction context (UK)" in SYSTEM_PROMPT
     assert "# Scheduling context" in SYSTEM_PROMPT
     assert "# Planning playbook" in SYSTEM_PROMPT
+
+
+def test_add_dependency_changes_the_order(activities):
+    acts, _, problems = apply_edits(
+        [edit("add_dependency", activity_id="A10", predecessor_id="A09")], activities, [], TODAY
+    )
+    assert problems == []
+    assert {a.id: a for a in acts}["A10"].predecessors == ["A06", "A09"]
+
+
+def test_reordering_that_creates_a_loop_is_rejected(activities):
+    from delay_ai.planner import evaluate_options
+
+    loop = option(
+        "Steel after decking",
+        edit("add_dependency", activity_id="A05", predecessor_id="A06"),
+        strategy="resequence",
+    )
+    options, rejected = evaluate_options([loop], activities, [], START, TODAY)
+    assert options == []
+    assert rejected == [
+        {"title": "Steel after decking", "problems": ["The new order of work creates a loop"]}
+    ]
+
+
+def test_planner_asks_for_a_resequence_option():
+    from delay_ai.planner import SYSTEM_PROMPT
+
+    assert "always include at least one resequence option" in SYSTEM_PROMPT

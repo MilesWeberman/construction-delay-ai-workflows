@@ -267,8 +267,9 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - The knowledge is general UK practice, not yet the client's own standards.
 
 **Recovery options**
-- Three kinds of edit only: drop a dependency, shorten an activity (by up to
-  30%), or ask for an earlier delivery.
+- Four kinds of edit only: drop a dependency, add one (to change the order of
+  work), shorten an activity (by up to 30%), or ask for an earlier delivery.
+  Splitting a task across floors or crews isn't modelled.
 - A phased delivery is modelled as the whole PO arriving earlier.
 - Options are proposed only for delays that push out the finish.
 - Options are scored when proposed. If the plan changes before one is chosen

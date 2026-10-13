@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,10 @@ from delay_ai.plan import SITE_EDITS, Edit, apply_edits, current_activities
 
 class RecoveryOption(BaseModel):
     title: str
+    strategy: Literal["resequence", "accelerate", "supply"] = Field(
+        description="resequence: change the order or overlap of work, no extra resource. "
+        "accelerate: extra labour, shifts or plant. supply: ask for an earlier delivery"
+    )
     edits: list[Edit]
     rationale: str
     risks: str
@@ -51,15 +56,22 @@ def describe_plan(schedule: Schedule, activities: list[Activity], materials: lis
     return "\n".join(lines)
 
 
-SYSTEM_PROMPT = f"""You are a senior UK construction planner. A late delivery has
-pushed out the project finish. Propose up to 3 distinct recovery options.
+SYSTEM_PROMPT = f"""You are a senior UK construction planner. Something has pushed
+out the project finish. Propose 3 recovery options that use different strategies.
+
+Speeding up isn't always possible (crews, crane time and budgets are limited), so
+always include at least one resequence option: change the order or overlap of
+work with no extra labour or cost, even if it wins back fewer days. Then add the
+best acceleration or supply option you can see.
 
 Each option is a list of edits to the programme:
 - remove_dependency: let activity_id start without waiting for predecessor_id
+- add_dependency: make activity_id wait for predecessor_id (use with
+  remove_dependency to swap the order of two tasks)
 - shorten: take days off activity_id (extra labour, longer shifts)
 - change_delivery: ask the supplier of po_number to deliver earlier, on new_delivery
-Use only these three edit types; lengthen and not_before record site news, they
-don't recover time.
+Use only these edit types; lengthen and not_before record site news, they don't
+recover time.
 
 The days recovered are calculated for you afterwards, so don't state them.
 Explain the rationale in planning terms, be honest about risks, and give a rough
@@ -112,6 +124,11 @@ def evaluate_options(
     options, rejected = [], []
     for option in proposed:
         new_acts, new_mats, problems = apply_edits(option.edits, activities, materials, today)
+        if not problems:
+            try:
+                result = schedule_with_materials(new_acts, new_mats, start_date)
+            except ValueError:  # e.g. a reordering that makes tasks wait for each other
+                problems.append("The new order of work creates a loop")
         problems += [f"{e.type} doesn't recover time" for e in option.edits if e.type in SITE_EDITS]
         problems += [
             f"The supplier has just said {late_po} can't arrive earlier"
@@ -121,7 +138,6 @@ def evaluate_options(
         if problems:
             rejected.append({"title": option.title, "problems": problems})
             continue
-        result = schedule_with_materials(new_acts, new_mats, start_date)
         options.append(
             EvaluatedOption(
                 **option.model_dump(),
