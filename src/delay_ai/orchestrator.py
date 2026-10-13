@@ -23,10 +23,14 @@ class Orchestrator:
         self.handlers = handlers
         self.on_step = on_step or (lambda message: None)  # progress, e.g. print
 
-    def run(self, max_steps: int = 1000) -> int:
-        """Process events (including newly emitted ones) until none are pending."""
+    def run(self, max_steps: int = 1000, defer: Callable[[Event], bool] | None = None) -> int:
+        """Process events (including newly emitted ones) until none are pending.
+
+        Events that `defer` picks are left pending for a later run, e.g. slow LLM
+        work the app does after replying.
+        """
         steps = 0
-        while pending := self.store.pending():
+        while pending := [e for e in self.store.pending() if not (defer and defer(e))]:
             for event in pending:
                 if steps >= max_steps:
                     raise RuntimeError(f"Stopped after {max_steps} steps, possible event loop")

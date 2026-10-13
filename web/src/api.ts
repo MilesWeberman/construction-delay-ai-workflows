@@ -19,6 +19,7 @@ export type Alert = {
   headline: string
   slip_days: number
   recovery: Recovery | null
+  preparing: boolean // recovery options are being worked out in the background
 }
 
 export type Link = { po: string; material: string; supplier: string; delivery: string; suggested: string | null }
@@ -84,6 +85,7 @@ export type View = {
   chat: { role: 'user' | 'assistant'; text: string }[]
   counts: { review: number; drafts: number }
   ai_ready: boolean
+  pending_work: boolean
 }
 
 export type Action =
@@ -93,6 +95,7 @@ export type Action =
   | { kind: 'set_delivery'; email_id: string; po_number: string; date: string }
   | { kind: 'dismiss_review'; email_id: string }
   | { kind: 'mark_sent'; message_id: string }
+  | { kind: 'continue' }
 
 type Saved = { seed: string | null; events: unknown[] }
 

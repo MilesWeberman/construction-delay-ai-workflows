@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type Action, type View, fetchView, resetSaved } from './api'
 import Alerts, { Links } from './sections/Alerts'
 import Assistant from './sections/Assistant'
@@ -18,19 +18,32 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('schedule')
 
-  const load = async (action?: Action, busyLabel?: string, quiet = false) => {
-    setBusy(busyLabel ?? null)
+  // Requests run one at a time: each sends this browser's saved events and stores
+  // what comes back, so two at once would overwrite each other's changes.
+  const queue = useRef<Promise<unknown>>(Promise.resolve())
+
+  const request = async (action?: Action, busyLabel?: string, quiet = false) => {
+    if (busyLabel) setBusy(busyLabel)
     setError(null)
     try {
-      setView(await fetchView(action))
+      const next = await fetchView(action)
+      setView(next)
+      // Replies come back first; recovery options are worked out in a follow-up.
+      if (next.pending_work && action?.kind !== 'continue') load({ kind: 'continue' }, undefined, true)
       return null
     } catch (e) {
       const message = (e as Error).message
       if (!quiet) setError(message)
       return message
     } finally {
-      setBusy(null)
+      if (busyLabel) setBusy(null)
     }
+  }
+
+  const load = (action?: Action, busyLabel?: string, quiet = false): Promise<string | null> => {
+    const result = queue.current.then(() => request(action, busyLabel, quiet))
+    queue.current = result.catch(() => null)
+    return result
   }
   // chat errors are shown inside the chat, everything else at the top of the page
   const act: Act = (action, busyLabel) => load(action, busyLabel, action.kind === 'chat')

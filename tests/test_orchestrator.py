@@ -64,3 +64,20 @@ def test_reports_each_handled_step():
 
     assert steps[0].startswith("A #1 -> B (")
     assert steps[1:] == ["B #2 failed: ValueError", "B #3 failed: ValueError"]
+
+
+def test_deferred_events_stay_pending():
+    store = EventStore()
+    store.append("Quick", {})
+    store.append("Slow", {})
+    ran = []
+    handlers = {
+        "Quick": lambda e: ran.append("quick") or [],
+        "Slow": lambda e: ran.append("slow") or [],
+    }
+    Orchestrator(store, handlers).run(defer=lambda e: e.type == "Slow")
+    assert ran == ["quick"]
+    assert [e.type for e in store.pending()] == ["Slow"]
+
+    Orchestrator(store, handlers).run()
+    assert ran == ["quick", "slow"]

@@ -60,7 +60,7 @@ def test_choosing_twice_is_refused(monkeypatch):
     first = view()
     options_event = first["view"]["alerts"][0]["recovery"]["event"]
     monkeypatch.setattr("delay_ai.api.missing_api_key", lambda: None)
-    monkeypatch.setattr("delay_ai.api.Orchestrator.run", lambda self: 0)
+    monkeypatch.setattr("delay_ai.api.Orchestrator.run", lambda self, **kwargs: 0)
     chose = view(action={"kind": "choose", "options_event": options_event, "number": 1},
                  seed=first["seed"])  # fmt: skip
     response = client.post(
@@ -112,3 +112,32 @@ def test_past_date_is_refused():
                    "date": "2020-01-01"},
     })  # fmt: skip
     assert response.status_code == 400
+
+
+def test_reply_first_then_recovery_options(monkeypatch):
+    """A delay that moves completion comes back at once; options follow on 'continue'."""
+    from test_planner import fake_propose
+
+    first = view()
+    email = windows_email(first["view"])
+    late = view(
+        seed=first["seed"],
+        action={"kind": "set_delivery", "email_id": email["id"], "po_number": "PO-24131",
+                "date": "2027-05-03"},  # far enough to use up the windows' float
+    )  # fmt: skip
+    v = late["view"]
+    assert v["pending_work"] is True
+    (windows,) = [a for a in v["alerts"] if a["headline"].startswith("Aluminium")]
+    assert windows["preparing"] is True and windows["recovery"] is None
+
+    monkeypatch.setattr("delay_ai.workflow.propose_with_llm", fake_propose)
+    done = view(seed=late["seed"], events=late["events"], action={"kind": "continue"})
+    assert done["view"]["pending_work"] is False
+    (windows,) = [a for a in done["view"]["alerts"] if a["headline"].startswith("Aluminium")]
+    assert windows["preparing"] is False and windows["recovery"]["options"]
+
+
+def test_delays_that_dont_move_completion_need_no_follow_up():
+    first = view()
+    linked = view(seed=first["seed"], action={"kind": "link", "links": [["PO-24170", "A16"]]})
+    assert linked["view"]["pending_work"] is False
