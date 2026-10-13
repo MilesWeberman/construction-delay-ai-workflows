@@ -80,9 +80,10 @@ A scheduling app with AI built in, in three tabs:
 
 - **Schedule**: the completion date; an *Action needed* card when a late
   delivery or site news pushes completion out, with recovery options to choose;
-  the calendar (hover a task for its full name and dates); the deliveries the
-  AI matched to tasks, to confirm; and materials, each with a plain status and
-  its next step (e.g. *Late: completion +7 days → See recovery options*).
+  the calendar (hover a task for its full name and dates); materials, each with
+  a plain status and its next step (e.g. *Late: completion +7 days → See
+  recovery options*); and below them, the deliveries the AI matched to tasks,
+  to confirm one by one.
 - **Inbox**: what the AI did with each email. Emails it couldn't record open
   with actions: enter the delivery date yourself, or dismiss.
 - **Outbox**: messages drafted when an option is chosen, each *Draft, not sent*
