@@ -229,7 +229,7 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - If one item in an email fails a check, the whole email goes to review.
 - Chat messages are trusted as coming from the team: they can update any
   supplier's order, but can't create new orders.
-- The chat has no memory of earlier messages; each message stands alone.
+- The chat remembers only the last few messages of the conversation.
 - Site news from the chat is applied to the schedule straight away (no review),
   and only as "takes N more days" or "can't start before a date". Weather isn't
   read from a forecast service.

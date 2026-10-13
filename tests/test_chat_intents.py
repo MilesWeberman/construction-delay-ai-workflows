@@ -67,7 +67,7 @@ def test_suggested_change_is_scored_and_can_be_chosen(setup):
     (scored,) = proposal.payload["options"]
     assert proposal.payload["po_number"] is None
     assert scored["recovered_days"] > 0
-    assert text.startswith("I modelled 'Glazing follows decking': it recovers")
+    assert text.startswith("I've modelled it: **Glazing follows decking** wins back")
 
 
 def test_impossible_change_is_explained(setup):
@@ -77,7 +77,7 @@ def test_impossible_change_is_explained(setup):
     _, text = send(
         setup, "Halve steel erection", "schedule_change", propose_change=lambda t, p: plan
     )
-    assert text == "I couldn't model that change: Cannot shorten A05 by 10 (max 6)."
+    assert text == "I couldn't model that: Cannot shorten A05 by 10 (max 6)."
 
 
 def test_question_is_answered_with_the_live_plan(setup):
@@ -115,4 +115,6 @@ def test_delivery_news_uses_the_email_pipeline(setup):
     with_news = (store, activities, handlers | {EMAIL_RECEIVED: chat_extract})
     new, reply = send(with_news, text, "delivery_news")
     assert any(e.type == DELIVERY_DATE_CHANGED for e in new)
-    assert reply == "Recorded: PO-24130 moves 2027-03-03 -> 2027-03-10."
+    assert (
+        reply == "Thanks, noted. Unitised curtain wall panels: delivery moved from 3 Mar to 10 Mar."
+    )

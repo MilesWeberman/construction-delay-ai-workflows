@@ -64,6 +64,7 @@ def test_labour_shortage_on_critical_task_slips_completion_and_gets_options(setu
     news = SiteNews(
         edits=[edit("lengthen", activity_id="A13", days=5)],
         reason="drylining gang two men short",
+        explanation="",
         confidence=0.9,
     )
     new, text = send(
@@ -73,8 +74,10 @@ def test_labour_shortage_on_critical_task_slips_completion_and_gets_options(setu
         extract_site_news=lambda t, p, d: news,
     )
 
-    assert text.startswith(
-        "Recorded on the schedule: Drylining and partitions takes 5 more working days"
+    assert text == (
+        "Got it. I've added 5 working days to drylining and partitions. That pushes "
+        "completion 5 working days later, to 8 Sep. I've suggested ways to recover on the "
+        "schedule."
     )
     (assessed,) = [e for e in new if e.type == DISRUPTION_ASSESSED]
     assert assessed.payload["project_slip_days"] == 5
@@ -87,6 +90,7 @@ def test_weather_on_task_with_float_does_not_move_completion(setup):  # noqa: F8
     news = SiteNews(
         edits=[edit("lengthen", activity_id="A18", days=3)],
         reason="heavy rain",
+        explanation="",
         confidence=0.9,
     )
     new, _ = send(with_site_handlers(setup), "Rain stopped landscaping for 3 days",
@@ -97,8 +101,26 @@ def test_weather_on_task_with_float_does_not_move_completion(setup):  # noqa: F8
 
 
 def test_unclear_site_news_is_not_recorded(setup):  # noqa: F811
-    news = SiteNews(edits=[edit("lengthen", activity_id="A99", days=2)], reason="?", confidence=0.4)
+    news = SiteNews(
+        edits=[edit("lengthen", activity_id="A99", days=2)],
+        reason="?",
+        explanation="",
+        confidence=0.4,
+    )
     new, text = send(with_site_handlers(setup), "Something happened", "site_news",
                      extract_site_news=lambda t, p, d: news)  # fmt: skip
-    assert text.startswith("I couldn't record that:")
+    assert text.startswith("I'm not sure which work that affects")
+    assert not [e for e in new if e.type == ACTIVITY_DISRUPTED]
+
+
+def test_news_that_affects_no_task_gets_a_plain_answer(setup):  # noqa: F811
+    news = SiteNews(
+        edits=[],
+        explanation="No crane lifts are planned between 15 and 19 Oct; steel starts in January.",
+        reason="storm",
+        confidence=0.9,
+    )
+    new, text = send(with_site_handlers(setup), "Storm Thursday to Monday, no crane lifts",
+                     "site_news", extract_site_news=lambda t, p, d: news)  # fmt: skip
+    assert text == "No crane lifts are planned between 15 and 19 Oct; steel starts in January."
     assert not [e for e in new if e.type == ACTIVITY_DISRUPTED]
