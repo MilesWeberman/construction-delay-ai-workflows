@@ -253,6 +253,9 @@ Shortcuts taken on purpose for v0. Each one is a candidate for after the pilot.
 - The server trusts the events the browser sends back; fine for a demo, not for
   real users (that needs accounts and server-side storage).
 - Choosing an option waits on the LLM for about a minute with no live progress.
+- Recovery options for a new delay are worked out in a follow-up request after
+  the reply (about a minute). The browser runs requests one at a time, so
+  anything else done meanwhile waits for it.
 - Drafts are sent by hand: *Open in email app* pre-fills an email, and *Mark as
   sent* is the planner's word for it.
 

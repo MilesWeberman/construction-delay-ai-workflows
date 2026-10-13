@@ -30,6 +30,9 @@ export default function Alerts({ view, act, busy }: Props) {
                   : `This pushes completion ${days(alert.slip_days)} later. Choose how to recover.`}
               </p>
             )}
+            {alert.preparing && (
+              <p className="preparing"><span className="spinner" />Working out ways to recover…</p>
+            )}
             {alert.recovery && (
               <RecoveryOptions recovery={alert.recovery} act={act} busy={busy} open={!delay} />
             )}

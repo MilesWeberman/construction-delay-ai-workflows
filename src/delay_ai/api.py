@@ -25,7 +25,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from delay_ai.actions import choose_option
-from delay_ai.events import OPTION_CHOSEN, RECOVERY_OPTIONS_PROPOSED, EventStore
+from delay_ai.events import (
+    DELAY_ASSESSED,
+    DISRUPTION_ASSESSED,
+    OPTION_CHOSEN,
+    RECOVERY_OPTIONS_PROPOSED,
+    Event,
+    EventStore,
+)
 from delay_ai.linking import planner_link
 from delay_ai.llm import missing_api_key
 from delay_ai.orchestrator import Orchestrator, ingest_chat
@@ -36,6 +43,7 @@ from delay_ai.workflow import handlers
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data" / "sample"
 WEB_BUILD = ROOT / "web" / "dist"
+DELAYS = {DELAY_ASSESSED, DISRUPTION_ASSESSED}
 
 load_dotenv()
 app = FastAPI(title="Delay AI")
@@ -105,7 +113,13 @@ class MarkSent(BaseModel):
     message_id: str
 
 
-Action = Link | Choose | Chat | SetDelivery | DismissReview | MarkSent
+class Continue(BaseModel):
+    """Run the work left pending by the previous request (recovery options)."""
+
+    kind: Literal["continue"]
+
+
+Action = Link | Choose | Chat | SetDelivery | DismissReview | MarkSent | Continue
 NEEDS_AI = (Choose, Chat)
 
 
@@ -125,6 +139,12 @@ def replay(request: Request) -> tuple[EventStore, str, int]:
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(400, f"Saved events are invalid: {e}") from e
     return store, seed_hash, last_seed_id
+
+
+def needs_recovery_options(event: Event) -> bool:
+    """A delay that moves completion: the planner's LLM call takes up to a minute, so
+    the app replies first and asks for these in a follow-up `continue` request."""
+    return event.type in DELAYS and event.payload["project_slip_days"] > 0
 
 
 def run(store: EventStore, action: Action) -> None:
@@ -155,14 +175,15 @@ def run(store: EventStore, action: Action) -> None:
             raise HTTPException(400, str(e)) from e
         for emit in emits:
             store.append(emit.type, emit.payload)
-    else:
+    elif isinstance(action, (DismissReview, MarkSent)):
         emit = (
             dismiss_review(action.email_id)
             if isinstance(action, DismissReview)
             else mark_sent(action.message_id)
         )
         store.append(emit.type, emit.payload)
-    Orchestrator(store, handlers(store, DATA)).run()
+    defer = None if isinstance(action, Continue) else needs_recovery_options
+    Orchestrator(store, handlers(store, DATA)).run(defer=defer)
 
 
 @app.post("/api/view")
@@ -174,7 +195,11 @@ def view(request: Request) -> dict[str, Any]:
     return {
         "seed": seed_hash,
         "events": store.export(after_id=last_seed_id),
-        "view": build_view(store.all(), DATA) | {"ai_ready": missing_api_key() is None},
+        "view": build_view(store.all(), DATA)
+        | {
+            "ai_ready": missing_api_key() is None,
+            "pending_work": any(needs_recovery_options(e) for e in store.pending()),
+        },
     }
 
 

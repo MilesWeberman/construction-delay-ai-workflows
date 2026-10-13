@@ -83,13 +83,13 @@ def build_view(events: list[Event], data: Path) -> dict[str, Any]:
         )
         alerts.append(
             {"kind": "delay", "headline": headline, "slip_days": p["project_slip_days"],
-             "recovery": recovery}
+             "recovery": recovery, "preparing": recovery is None and delay.status == "pending"}
         )  # fmt: skip
     for proposal in proposals:
         if proposal.payload.get("chat_event") and proposal.payload["options"]:  # from the chat
             alerts.append(
                 {"kind": "suggestion", "headline": "Your suggested change", "slip_days": 0,
-                 "recovery": options(proposal)}
+                 "recovery": options(proposal), "preparing": False}
             )  # fmt: skip
 
     links = [
