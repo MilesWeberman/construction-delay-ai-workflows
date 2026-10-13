@@ -74,7 +74,8 @@ def describe_delay(event: Event) -> str:
     if event.type == DELAY_ASSESSED:
         cause = (
             f"Late delivery: {p['po_number']} for {p['activity_id']} moved from "
-            f"{p['old_delivery']} to {p['new_delivery']}."
+            f"{p['old_delivery']} to {p['new_delivery']}. The supplier has just given this "
+            f"as their earliest date, so don't ask them to deliver {p['po_number']} earlier."
         )
     else:
         cause = f"Site news: {p['summary']}."
@@ -100,13 +101,23 @@ def evaluate_options(
     materials: list[Material],
     start_date: date,
     today: date,
+    late_po: str | None = None,
 ) -> tuple[list[EvaluatedOption], list[dict]]:
-    """Validate and score options with the CPM, best first. Invalid ones come back with reasons."""
+    """Validate and score options with the CPM, best first. Invalid ones come back with reasons.
+
+    late_po is the order that caused the delay: its supplier has just given their
+    earliest date, so asking them to bring that same order forward isn't an option.
+    """
     current = schedule_with_materials(activities, materials, start_date)
     options, rejected = [], []
     for option in proposed:
         new_acts, new_mats, problems = apply_edits(option.edits, activities, materials, today)
         problems += [f"{e.type} doesn't recover time" for e in option.edits if e.type in SITE_EDITS]
+        problems += [
+            f"The supplier has just said {late_po} can't arrive earlier"
+            for e in option.edits
+            if e.type == "change_delivery" and e.po_number == late_po
+        ]
         if problems:
             rejected.append({"title": option.title, "problems": problems})
             continue
@@ -136,7 +147,12 @@ def make_planner_handler(
         current = schedule_with_materials(activities, materials, start_date)
         plan = propose(describe_delay(event), current, activities, materials)
         options, rejected = evaluate_options(
-            plan.options, activities, materials, start_date, event.created_at.date()
+            plan.options,
+            activities,
+            materials,
+            start_date,
+            event.created_at.date(),
+            late_po=event.payload.get("po_number"),
         )
         payload = {
             "assessment_event": event.id,
